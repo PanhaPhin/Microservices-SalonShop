@@ -3,7 +3,7 @@ package com.panha.domain;
 
 
 public enum  BookingStatus {
-     PENDING,
+    PENDING,
     SUCCESS,
     FAILED
 
