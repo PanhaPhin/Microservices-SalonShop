@@ -34,6 +34,10 @@ public class PaymentOrder {
     @Column(unique = true)
     private String externalPaymentId;
 
+    @Column(unique = true, nullable = false)
+    private String paymentLinkId;
+
+
     @Column(nullable = false)
     private Long userId;
 

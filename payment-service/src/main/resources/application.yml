@@ -1,0 +1,47 @@
+server:
+  port: 5012
+
+spring:
+  application:
+    name: payment-service
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/paymentdb_yt?createDatabaseIfNotExist=true
+    username: root
+    password: Nha1234567
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+razorpay:
+  api:
+    key: your_razorpay_api_key
+    secret: your_razorpay_api_secret
+
+stripe:
+  api:
+    key: your_stripe_api_key
+
+bakong:
+  api:
+    key: your_bakong_api_key
+    secret: your_bakong_api_secret
+    base-url: https://api-bakong.nbc.gov.kh
+
+eureka:
+  instance:
+    prefer-ip-address: true
+
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://localhost:8070/eureka/
+
+logging:
+  level:
+    root: DEBUG
+    

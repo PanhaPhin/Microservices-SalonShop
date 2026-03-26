@@ -9,5 +9,5 @@ import com.panha.model.PaymentOrder;
 
 public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Long> {
 
-    PaymentOrder findByPaymentLinkId(String paymentLinkId);
+    PaymentOrder findByPaymentLinkId(String externalPaymentId);
 }
