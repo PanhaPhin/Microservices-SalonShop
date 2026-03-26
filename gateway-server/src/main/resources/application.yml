@@ -4,22 +4,11 @@ server:
 
 spring:
   application:
-    name: booking-service
-
-  datasource:
-    url: jdbc:mysql://localhost:3306/bookingdb_yt
-    username: root
-    password: Nha1234567
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
+    name: gateway-server
 
 eureka:
   instance:
-    hostname: localhost
+    prefer-ip-address: true
 
   client:
     fetch-registry: true
