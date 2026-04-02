@@ -58,7 +58,6 @@ public class SalonController {
     public ResponseEntity<List<SalonDTO>> getSalons() throws Exception {
 
         List<Salon> salons = salonService.getAllSalon();
-
         List<SalonDTO> salonDTOs = salons.stream()
                 .map(SalonMapper::mapToDTO)
                 .toList();
@@ -86,7 +85,7 @@ public ResponseEntity<List<SalonDTO>> searchSalons(
         @RequestParam("city") String city
         ) throws Exception {
             // UserDTO userDTO= new UserDTO();
-            // userDTO.setId(1L);
+            // userDTO.setId(1L);`
     List<Salon> salons = salonService.searchSalonByCity(city);
 
     List<SalonDTO> salonDTOs = salons.stream()
