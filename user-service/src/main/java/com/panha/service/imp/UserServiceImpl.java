@@ -1,7 +1,6 @@
 package com.panha.service.imp;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
@@ -10,13 +9,15 @@ import com.panha.modal.User;
 import com.panha.repository.UserRepository;
 import com.panha.service.UserService;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+
+    // Constructor injection for Spring
+    public UserServiceImpl(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @Override
     public User createUser(User user) {
@@ -42,13 +43,15 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User updateUser(Long id, User user) throws UserException {
-
         User existingUser = getUserById(id);
 
         existingUser.setFullName(user.getFullName());
         existingUser.setEmail(user.getEmail());
         existingUser.setRole(user.getRole());
         existingUser.setUsername(user.getUsername());
+        existingUser.setPhone(user.getPhone());
+        existingUser.setPassword(user.getPassword());
+        existingUser.updateTimestamp();
 
         return userRepository.save(existingUser);
     }
