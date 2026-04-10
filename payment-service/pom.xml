@@ -39,10 +39,10 @@
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
         <dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-configuration-processor</artifactId>
-    <optional>true</optional>
-</dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
 
 
 
@@ -119,15 +119,15 @@
             </plugin>
 
             <plugin>
-            <groupId>com.google.cloud.tools</groupId>
-            <artifactId>jib-maven-plugin</artifactId>
-            <version>3.5.1</version>
-            <configuration>
-                <to>
-                    <image>panhaphindeveloper/salon-payment:v1</image>
-                </to>
-            </configuration>
-        </plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <to>
+                        <image>panhaphindeveloper/salon-payment:v1</image>
+                    </to>
+                </configuration>
+            </plugin>
 
 
         </plugins>

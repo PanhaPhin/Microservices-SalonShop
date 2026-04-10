@@ -1,0 +1,275 @@
+services:
+
+  # ================= DATABASES =================
+  userdb:
+    image: mysql:8.0
+    container_name: userdb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Nha1234567
+      MYSQL_DATABASE: userdb_yt
+    volumes:
+      - userdb_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - panhaphindeveloper
+
+  bookingdb:
+    image: mysql:8.0
+    container_name: bookingdb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Nha1234567
+      MYSQL_DATABASE: bookingdb_yt
+    volumes:
+      - bookingdb_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - panhaphindeveloper
+
+  categorydb:
+    image: mysql:8.0
+    container_name: categorydb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Nha1234567
+      MYSQL_DATABASE: categorydb_yt
+    volumes:
+      - categorydb_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - panhaphindeveloper
+
+  paymentdb:
+    image: mysql:8.0
+    container_name: paymentdb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Nha1234567
+      MYSQL_DATABASE: paymentdb_yt
+    volumes:
+      - paymentdb_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - panhaphindeveloper
+
+  serviceofferingdb:
+    image: mysql:8.0
+    container_name: serviceofferingdb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Nha1234567
+      MYSQL_DATABASE: service_offeringdb
+    volumes:
+      - serviceofferingdb_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - panhaphindeveloper
+
+  salondb:
+    image: mysql:8.0
+    container_name: salondb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Nha1234567
+      MYSQL_DATABASE: salondb_yt
+    volumes:
+      - salondb_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - panhaphindeveloper
+
+  # ================= EUREKA SERVER =================
+  eurekaserver:
+    image: panhaphindeveloper/salon-eurakserver:v1
+    container_name: eurekaserver
+    restart: always
+    ports:
+      - "8070:8070"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --fail --silent http://localhost:8070/actuator/health/readiness | grep UP || exit 1" ]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+    networks:
+      - panhaphindeveloper
+
+  # ================= MICROSERVICES =================
+  user-service:
+    image: panhaphindeveloper/user-service:v1
+    container_name: user-service
+    restart: always
+    ports:
+      - "5001:5001"
+    depends_on:
+      userdb:
+        condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
+    environment:
+      SPRING_APPLICATION_NAME: user-service
+      SPRING_DATASOURCE_URL: jdbc:mysql://userdb:3306/userdb_yt
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Nha1234567
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka/
+    networks:
+      - panhaphindeveloper
+
+  booking-service:
+    image: panhaphindeveloper/salon-booking:v1
+    container_name: booking-service
+    restart: always
+    ports:
+      - "5010:5010"
+    depends_on:
+      bookingdb:
+        condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
+    environment:
+      SPRING_APPLICATION_NAME: booking-service
+      SPRING_DATASOURCE_URL: jdbc:mysql://bookingdb:3306/bookingdb_yt
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Nha1234567
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka/
+    networks:
+      - panhaphindeveloper
+
+  category-service:
+    image: panhaphindeveloper/salon-category:v1
+    container_name: category-service
+    restart: always
+    ports:
+      - "5007:5007"
+    depends_on:
+      categorydb:
+        condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
+    environment:
+      SPRING_APPLICATION_NAME: category-service
+      SPRING_DATASOURCE_URL: jdbc:mysql://categorydb:3306/categorydb_yt
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Nha1234567
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka/
+    networks:
+      - panhaphindeveloper
+
+  payment-service:
+    image: panhaphindeveloper/salon-payment:v1
+    container_name: payment-service
+    restart: always
+    ports:
+      - "5012:5012"
+    depends_on:
+      paymentdb:
+        condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
+    environment:
+      SPRING_APPLICATION_NAME: payment-service
+      SPRING_DATASOURCE_URL: jdbc:mysql://paymentdb:3306/paymentdb_yt
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Nha1234567
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka/
+    networks:
+      - panhaphindeveloper
+
+  salon-service:
+    image: panhaphindeveloper/salon-yt:v1
+    container_name: salon-service
+    restart: always
+    ports:
+      - "5003:5003"
+    depends_on:
+      salondb:
+        condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
+    environment:
+      SPRING_APPLICATION_NAME: salon-service
+      SPRING_DATASOURCE_URL: jdbc:mysql://salondb:3306/salondb_yt
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Nha1234567
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka/
+    networks:
+      - panhaphindeveloper
+
+  service-offering:
+    image: panhaphindeveloper/salon-service-offering:v1
+    container_name: service-offering
+    restart: always
+    ports:
+      - "5009:5009"
+    depends_on:
+      serviceofferingdb:
+        condition: service_healthy
+      eurekaserver:
+        condition: service_healthy
+    environment:
+      SPRING_APPLICATION_NAME: service-offering
+      SPRING_DATASOURCE_URL: jdbc:mysql://serviceofferingdb:3306/service_offeringdb
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Nha1234567
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka/
+    networks:
+      - panhaphindeveloper
+
+  gateway-service:
+    image: panhaphindeveloper/salon-gatewayserver:v1
+    container_name: gateway-service
+    restart: always
+    depends_on:
+      eurekaserver:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+    environment:
+      SPRING_APPLICATION_NAME: gateway-service
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka/
+    networks:
+      - panhaphindeveloper
+
+# ================= NETWORKS =================
+networks:
+  panhaphindeveloper:
+    driver: bridge
+
+# ================= VOLUMES =================
+volumes:
+  userdb_data:
+  bookingdb_data:
+  categorydb_data:
+  paymentdb_data:
+  serviceofferingdb_data:
+  salondb_data:

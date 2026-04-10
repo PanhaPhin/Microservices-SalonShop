@@ -6,7 +6,7 @@ spring:
     name: booking-service
 
   datasource:
-    url: jdbc:mysql://localhost:3306/bookingdb_yt
+    url: jdbc:mysql://bookingdb:3306/bookingdb_yt
     username: root
     password: Nha1234567
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -18,12 +18,12 @@ spring:
 
 eureka:
   instance:
-    hostname: localhost
+    hostname: eurakserver
 
   client:
     fetch-registry: true
     register-with-eureka: true
     service-url:
-      defaultZone: "http://localhost:8070/eureka/"
+      defaultZone: "http://eurakserver:8070/eureka/"
 
       

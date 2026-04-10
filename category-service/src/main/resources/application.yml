@@ -6,7 +6,7 @@ spring:
     name: category-service
 
   datasource:
-    url: jdbc:mysql://localhost:3306/categorydb_yt
+    url: jdbc:mysql://categorydb:3306/categorydb_yt
     username: root
     password: Nha1234567
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -24,4 +24,4 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
     service-url:
-      defaultZone: "http://localhost:8070/eureka/"
+      defaultZone: "http://eurakserver:8070/eureka/"

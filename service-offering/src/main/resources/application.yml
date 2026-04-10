@@ -1,0 +1,28 @@
+
+server:
+  port: 5009
+
+spring:
+  application:
+    name: service-offering
+
+  datasource:
+    url: jdbc:mysql://service-offeringdb:3306/service_offeringdb
+    username: root
+    password: Nha1234567
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+eureka:
+  instance:
+    prefer-ip-address: true
+
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://eurakserver:8070/eureka/

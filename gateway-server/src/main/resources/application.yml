@@ -16,7 +16,7 @@ spring:
         - id: USER-SERVICE
           uri: lb://USER-SERVICE
           predicates:
-            - Path= /auth/**  ,/api/admin/users/** , /api/users/** , /users/**
+            - Path=/auth/**,/api/admin/users/**,/api/users/**,/users/**
 
         - id: BOOKING-SERVICE
           uri: lb://BOOKING-SERVICE
@@ -53,4 +53,4 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://localhost:8070/eureka/
+      defaultZone: http://eurekaserver:8070/eureka/

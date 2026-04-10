@@ -1,5 +1,8 @@
 package com.panhaphin.controller;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,21 +27,29 @@ public class SalonServiceOfferingController {
         this.serviceOfferingService = serviceOfferingService;
     }
 
+    // Accept multiple services
     @PostMapping
-    public ResponseEntity<ServiceOffering> createService(@RequestBody ServiceDTO serviceDTO) {
+    public ResponseEntity<List<ServiceOffering>> createServices(@RequestBody List<ServiceDTO> serviceDTOs) {
 
-        SalonDTO salonDTO = new SalonDTO();
-        salonDTO.setId(1L); // replace with logged-in salon ID
+        List<ServiceOffering> offerings = new ArrayList<>();
 
-        CategoryDTO categoryDTO = new CategoryDTO();
-        categoryDTO.setId(serviceDTO.getCategory());
+        for (ServiceDTO serviceDTO : serviceDTOs) {
+            SalonDTO salonDTO = new SalonDTO();
+            salonDTO.setId(1L); // replace with logged-in salon ID
 
-        ServiceOffering serviceOffering =
-                serviceOfferingService.createService(salonDTO, serviceDTO, categoryDTO);
+            CategoryDTO categoryDTO = new CategoryDTO();
+            categoryDTO.setId(serviceDTO.getCategory());
 
-        return ResponseEntity.ok(serviceOffering);
+            ServiceOffering offering =
+                    serviceOfferingService.createService(salonDTO, serviceDTO, categoryDTO);
+
+            offerings.add(offering);
+        }
+
+        return ResponseEntity.ok(offerings);
     }
 
+    // Update single service
     @PutMapping("/{id}")
     public ResponseEntity<ServiceOffering> updateService(
             @PathVariable Long id,

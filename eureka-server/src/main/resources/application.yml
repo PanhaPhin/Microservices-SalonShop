@@ -7,13 +7,14 @@ spring:
 
 eureka:
   instance:
-    hostname: localhost
+    hostname: eurakserver
 
   client:
     fetch-registry: false
     register-with-eureka: false
     service-url:
-      defaultZone: "http://${eureka.instance.hostname}:${server.port}/eureka/"
+      # defaultZone: "http://${eureka.instance.hostname}:${server.port}/eureka/"
+      defaultZone: "http://eurakserver:8070/eureka/"
 
 
 
