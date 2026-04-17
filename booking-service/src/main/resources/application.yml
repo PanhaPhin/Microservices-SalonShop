@@ -18,12 +18,12 @@ spring:
 
 eureka:
   instance:
-    hostname: eurakserver
+    hostname: eurekaserver
 
   client:
     fetch-registry: true
     register-with-eureka: true
     service-url:
-      defaultZone: "http://eurakserver:8070/eureka/"
+      defaultZone: "http://eurekaserver:8070/eureka/"
 
       
