@@ -16,12 +16,13 @@ public class BookingDTO {
 
     private Long customerId;
 
-    private LocalDateTime starTime;
+    private LocalDateTime startTime; 
 
     private LocalDateTime endTime;
 
     private Set<Long> serviceIds;
 
+    private Long totalPrice; 
+
     private BookingStatus status = BookingStatus.PENDING;
-    
 }

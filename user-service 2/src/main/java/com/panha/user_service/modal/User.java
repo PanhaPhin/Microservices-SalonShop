@@ -4,14 +4,27 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.panha.user_service.domain.UserRole;
+
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Entity
+@Entity 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
 
     @Id
@@ -29,8 +42,9 @@ public class User {
 
     private String phone;
 
-    @NotBlank(message = "role is mandatory")
-    private String role;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -41,86 +55,7 @@ public class User {
     @NotBlank(message = "password is mandatory")
     private String password;
 
-    public User() {
-    }
+    private String keycloakId;
 
-    public User(Long id, String fullName, String username, String email, String phone, String role, String password) {
-        this.id = id;
-        this.fullName = fullName;
-        this.username = username;
-        this.email = email;
-        this.phone = phone;
-        this.role = role;
-        this.password = password;
-    }
 
-    // ----- Getters and Setters -----
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void updateTimestamp() {
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
 }

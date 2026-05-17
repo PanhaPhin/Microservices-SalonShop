@@ -1,12 +1,14 @@
 server:
   port: 5001
 
+
 spring:
   application:
     name: user-service
 
+
   datasource:
-    url: jdbc:mysql://userdb:3306/userdb_yt
+    url: jdbc:mysql://localhost:3306/userdb_yt?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
     username: root
     password: Nha1234567
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -16,12 +18,13 @@ spring:
       ddl-auto: update
     show-sql: true
 
+
 eureka:
   instance:
     prefer-ip-address: true
-
+    
   client:
     fetch-registry: true
     register-with-eureka: true
     service-url:
-      defaultZone: "http://eurekaserver:8070/eureka/"
+      defaultZone: http://localhost:8070/eureka/

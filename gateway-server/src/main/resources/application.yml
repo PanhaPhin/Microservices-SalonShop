@@ -11,38 +11,51 @@ spring:
         locator:
           enabled: true
           lower-case-service-id: true
+
       routes:
 
-        - id: USER-SERVICE
-          uri: lb://USER-SERVICE
+        - id: user-service
+          uri: lb://user-service
           predicates:
             - Path=/auth/**,/api/admin/users/**,/api/users/**,/users/**
 
-        - id: BOOKING-SERVICE
-          uri: lb://BOOKING-SERVICE
+        - id: booking-service
+          uri: lb://booking-service
           predicates:
             - Path=/api/bookings/**
 
-        - id: SALON-SERVICE
-          uri: lb://SALON-SERVICE
+        - id: salon-service
+          uri: lb://salon-service
           predicates:
-            - Path= /salons/**  ,/api/salons/** , /api/admin/salons/**
+            - Path=/salons/**,/api/salons/**,/api/admin/salons/**
 
-        - id: SERVICE-OFFERING
-          uri: lb://SERVICE-OFFERING
+        - id: service-offering
+          uri: lb://service-offering
           predicates:
-            - Path= /api/service-offering/** 
+            - Path=/api/service-offering/**
 
-
-        - id: CATEGORY-SERVICE
-          uri: lb://CATEGORY-SERVICE
+        - id: category-service
+          uri: lb://category-service
           predicates:
             - Path=/api/categories/**
 
-        - id: PAYMENT-SERVICE
-          uri: lb://PAYMENT-SERVICE
+        
+        - id: notification-service
+          uri: lb://notification-service
           predicates:
-            - Path=/api/payment/**
+            - Path=/api/notifications/**
+
+
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/**
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/master
 
 eureka:
   instance:
@@ -53,4 +66,4 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://eurekaserver:8070/eureka/
+      defaultZone: http://localhost:8070/eureka/

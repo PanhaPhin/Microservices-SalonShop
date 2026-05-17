@@ -31,12 +31,11 @@ public class PaymentOrder {
     @Column(nullable = false)
     private PaymentMethod paymentMethod;
 
-    @Column(unique = true)
     private String externalPaymentId;
 
-    @Column(unique = true, nullable = false)
+    
+    @Column(unique = true)
     private String paymentLinkId;
-
 
     @Column(nullable = false)
     private Long userId;

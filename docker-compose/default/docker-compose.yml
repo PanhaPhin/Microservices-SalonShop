@@ -149,7 +149,7 @@ services:
       userdb:
         condition: service_healthy
       eurekaserver:
-        condition: service_healthy
+        condition: service_started
     environment:
       SPRING_APPLICATION_NAME: user-service
       SPRING_DATASOURCE_URL: jdbc:mysql://userdb:3306/userdb_yt
@@ -169,7 +169,7 @@ services:
       bookingdb:
         condition: service_healthy
       eurekaserver:
-        condition: service_healthy
+        condition: service_started
     environment:
       SPRING_APPLICATION_NAME: booking-service
       SPRING_DATASOURCE_URL: jdbc:mysql://bookingdb:3306/bookingdb_yt
@@ -189,7 +189,7 @@ services:
       categorydb:
         condition: service_healthy
       eurekaserver:
-        condition: service_healthy
+        condition: service_started
     environment:
       SPRING_APPLICATION_NAME: category-service
       SPRING_DATASOURCE_URL: jdbc:mysql://categorydb:3306/categorydb_yt
@@ -209,7 +209,7 @@ services:
       paymentdb:
         condition: service_healthy
       eurekaserver:
-        condition: service_healthy
+        condition: service_started
     environment:
       SPRING_APPLICATION_NAME: payment-service
       SPRING_DATASOURCE_URL: jdbc:mysql://paymentdb:3306/paymentdb_yt
@@ -229,7 +229,7 @@ services:
       salondb:
         condition: service_healthy
       eurekaserver:
-        condition: service_healthy
+        condition: service_started
     environment:
       SPRING_APPLICATION_NAME: salon-service
       SPRING_DATASOURCE_URL: jdbc:mysql://salondb:3306/salondb_yt
@@ -249,7 +249,7 @@ services:
       serviceofferingdb:
         condition: service_healthy
       eurekaserver:
-        condition: service_healthy
+        condition: service_started
     environment:
       SPRING_APPLICATION_NAME: service-offering
       SPRING_DATASOURCE_URL: jdbc:mysql://serviceofferingdb:3306/service_offeringdb
@@ -265,7 +265,7 @@ services:
     restart: always
     depends_on:
       eurekaserver:
-        condition: service_healthy
+        condition: service_started
     ports:
       - "5000:5000"
     environment:

@@ -6,7 +6,7 @@ spring:
     name: payment-service
 
   datasource:
-    url: jdbc:mysql://paymentdb:3306/paymentdb_yt?createDatabaseIfNotExist=true
+    url: jdbc:mysql://localhost:3306/paymentdb_yt?createDatabaseIfNotExist=true
     username: root
     password: Nha1234567
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -16,19 +16,19 @@ spring:
       ddl-auto: update
     show-sql: true
 
-razorpay:
-  api:
-    key: your_razorpay_api_key
-    secret: your_razorpay_api_secret
 
 stripe:
   api:
     key: your_stripe_api_key
 
 bakong:
+  khqr:
+    account-id: sopanha_phin@bkrt
+    account-number: 85599646350
+    bank-name: VATTANAC BANK
+  
   api:
-    key: your_bakong_api_key
-    secret: your_bakong_api_secret
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7ImlkIjoiYzNlZDU3ODA0ZTQzNGJjMyJ9LCJpYXQiOjE3Nzc4MTg0MTAsImV4cCI6MTc4NTU5NDQxMH0.gJ_1Xu54w3Q3De0ZinVJPZ0AMKkXrgumy1pmKLU5cP4
     base-url: https://api-bakong.nbc.gov.kh
 
 eureka:
@@ -39,9 +39,5 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
     service-url:
-      defaultZone: http://eurakserver:8070/eureka/
-
-logging:
-  level:
-    root: DEBUG
+      defaultZone: http://localhost:8070/eureka/
     

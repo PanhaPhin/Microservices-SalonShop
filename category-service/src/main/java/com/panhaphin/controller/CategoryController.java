@@ -18,7 +18,7 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     // Get all categories by salon
-    @GetMapping("/salon/{salonId}")
+    @GetMapping("/salon/{id}")
     public ResponseEntity<Set<Category>> getCategoriesBySalon(
             @PathVariable Long salonId) {
 

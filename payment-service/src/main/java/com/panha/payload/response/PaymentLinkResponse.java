@@ -1,6 +1,7 @@
 package com.panha.payload.response;
 
 import com.panha.domain.PaymentMethod;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,7 +16,7 @@ public class PaymentLinkResponse {
     private Long amount;
     private PaymentMethod method;
 
-    // Optional fields for specific providers
-    private String qrCode;     // Bakong
-    private String publicKey;  // Razorpay
+   
+    private String qrCode;     
+    private String publicKey;  
 }

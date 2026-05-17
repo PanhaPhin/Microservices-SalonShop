@@ -2,6 +2,9 @@ package com.panha.user_service.payload.dto;
 
 import java.util.Map;
 
+import lombok.Data;
+
+@Data
 public class KeycloakRole {
     private String id;
     private String name;

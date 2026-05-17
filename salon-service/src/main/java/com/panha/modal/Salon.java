@@ -14,36 +14,36 @@ import lombok.Data;
 @Entity
 @Data
 public class Salon {
-    
+
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @Column(nullable=false)
+    @Column(nullable = false)
     private String name;
 
     @ElementCollection
     private List<String> image;
 
-    @Column(nullable=false)
+    @Column(nullable = false)
     private String address;
 
-    @Column(nullable=false)
+    @Column(nullable = false)
     private String phoneNumber;
 
-    @Column(nullable=false)
+    @Column(nullable = false)
     private String email;
 
-    @Column(nullable=false)
+    @Column(nullable = false)
     private String city;
 
-    @Column(nullable=false)
+    @Column(nullable = false)
     private Long ownerId;
 
-    @Column(nullable=false)
+    @Column(nullable = false)
     private LocalTime openTime;
 
-    @Column(name="close_time")
-private LocalTime closeTime;
-    
+    @Column(name = "close_time")
+    private LocalTime closeTime;
+
 }

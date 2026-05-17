@@ -13,7 +13,7 @@ public class BakongProperties {
         private String secret;
         private String baseUrl;
 
-        // Getters and Setters
+      
         public String getKey() {
             return key;
         }

@@ -1,0 +1,30 @@
+
+server:
+  port: 5008
+
+spring:
+  application:
+    name: notification-service
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/notification_yt?createDatabaseIfNotExist=true
+    username: root
+    password: Nha1234567
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    
+
+
+eureka:
+  instance:
+    prefer-ip-address: true
+
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://localhost:8070/eureka/

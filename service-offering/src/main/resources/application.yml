@@ -7,7 +7,7 @@ spring:
     name: service-offering
 
   datasource:
-    url: jdbc:mysql://service-offeringdb:3306/service_offeringdb
+    url: jdbc:mysql://localhost:3306/service_offeringdb
     username: root
     password: Nha1234567
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -25,4 +25,4 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
     service-url:
-      defaultZone: http://eurakserver:8070/eureka/
+      defaultZone: http://localhost:8070/eureka/

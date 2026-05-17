@@ -17,7 +17,6 @@ public class SalonDTO {
     private String email;
     private String city;
     private Long ownerId;
-
     private LocalTime openTime;
     private LocalTime closeTime;
 
