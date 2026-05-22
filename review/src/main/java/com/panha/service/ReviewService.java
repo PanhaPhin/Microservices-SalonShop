@@ -17,8 +17,8 @@ public interface ReviewService {
 
     List<Review> getReviewsBySalonId(Long salonId);
 
-    Review updateReview(ReviewRequest req, Long reviewId, Long userId);
+    Review updateReview(ReviewRequest req, Long reviewId, Long userId) throws Exception;
 
-    void deleteReview(Long reviewId, Long userId);
+    void deleteReview(Long reviewId, Long userId) throws Exception;
 }
 

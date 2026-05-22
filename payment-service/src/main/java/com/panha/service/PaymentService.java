@@ -5,8 +5,6 @@ import com.panha.model.PaymentOrder;
 import com.panha.payload.dto.BookingDTO;
 import com.panha.payload.dto.UserDTO;
 import com.panha.payload.response.PaymentLinkResponse;
-import com.razorpay.RazorpayException;
-import com.stripe.exception.StripeException;
 
 public interface PaymentService {
 
@@ -32,15 +30,9 @@ public interface PaymentService {
             Long orderId
     );
 
-    // PaymentLinkResponse createRazorpayPaymentLink(
-    //         UserDTO user,
-    //         Long amount,
-    //         Long orderId
-    // );
-
     Boolean proceedPayment(
             PaymentOrder paymentOrder,
             String paymentId,
             String paymentLinkId
-    ) throws RazorpayException, StripeException, Exception;
+    ) throws Exception;
 }

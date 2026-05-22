@@ -1,29 +1,21 @@
-
 server:
-  port: 5008
+  port: 5015
 
 spring:
   application:
-    name: notification-service
+    name: review-service
 
   datasource:
-    url: jdbc:mysql://localhost:3306/notification_yt?createDatabaseIfNotExist=true
+    url: jdbc:mysql://localhost:3306/reviewdb_yt
+
     username: root
     password: Nha1234567
     driver-class-name: com.mysql.cj.jdbc.Driver
-
-  rabbitmq:
-    port: 5672
-    host: localhost
-    username: guest
-    password: guest
 
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
-    
-
 
 eureka:
   instance:

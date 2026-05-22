@@ -13,6 +13,8 @@ import com.panha.service.ReviewService;
 
 import lombok.RequiredArgsConstructor;
 
+
+
 @Service
 @RequiredArgsConstructor
 public class ReviewServiceImpl implements ReviewService {
@@ -33,20 +35,37 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public List<Review> getReviewsBySalonId(Long salonId) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getReviewsBySalonId'");
+       return reviewRepository.findBySalonId(salonId);
+    }
+
+    private Review getReviewById(Long id) throws Exception{
+        return reviewRepository.findById(id).orElseThrow(
+            ()-> new Exception("review not exist ... ")
+        );
+    }
+
+
+
+    @Override
+    public Review updateReview(ReviewRequest req, Long reviewId, Long userId) throws Exception {
+        Review review = getReviewById(reviewId);
+        if(!review.getUserId().equals(userId)){
+
+            throw new Exception("you are not the owner of this review ...");
+        }
+
+        review.setReviewText(req.getReviewText());
+        review.setRating(req.getRating());
+        return reviewRepository.save(review);
     }
 
     @Override
-    public Review updateReview(ReviewRequest req, Long reviewId, Long userId) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'updateReview'");
-    }
-
-    @Override
-    public void deleteReview(Long reviewId, Long userId) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'deleteReview'");
+    public void deleteReview(Long reviewId, Long userId) throws Exception {
+        Review review = getReviewById(reviewId);
+        if(!review.getUserId().equals(userId)){
+            throw new Exception("you are not the owner of this review ...");
+        }
+        reviewRepository.delete(review);
     }
 
 }

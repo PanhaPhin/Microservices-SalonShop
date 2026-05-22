@@ -56,7 +56,6 @@ public class BookingController {
     ) throws Exception {
 
         UserDTO user = userFeignClient.getUserProfile(jwt).getBody();
-
         SalonDTO salon = salonFeignClient.getSalonById(salonId).getBody();
 
         Set<ServiceDTO> serviceDTOSet

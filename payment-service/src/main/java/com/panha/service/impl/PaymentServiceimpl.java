@@ -3,6 +3,7 @@ package com.panha.service.impl;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -12,8 +13,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.panha.config.StripeProperties;
 import com.panha.domain.PaymentMethod;
 import com.panha.domain.PaymentOrderStatus;
+import com.panha.messaging.BookingEventProducer;
+import com.panha.messaging.NotificationEventProducer;
 import com.panha.model.PaymentOrder;
 import com.panha.payload.dto.BookingDTO;
 import com.panha.payload.dto.UserDTO;
@@ -24,6 +28,7 @@ import com.stripe.Stripe;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
 
+import jakarta.annotation.PostConstruct;
 import kh.gov.nbc.bakong_khqr.BakongKHQR;
 import kh.gov.nbc.bakong_khqr.model.IndividualInfo;
 import kh.gov.nbc.bakong_khqr.model.KHQRCurrency;
@@ -35,7 +40,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PaymentServiceimpl implements PaymentService {
 
+    private final NotificationEventProducer notificationEventProducer;
     private final PaymentOrderRepository paymentOrderRepository;
+    private final RabbitTemplate rabbitTemplate;
+    private final BookingEventProducer bookingEventProducer;
+    private final StripeProperties stripeProperties;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -59,6 +68,11 @@ public class PaymentServiceimpl implements PaymentService {
     @Value("${bakong.api.base-url}")
     private String bakongApiUrl;
 
+    @PostConstruct
+    public void initStripe() {
+        Stripe.apiKey = stripeProperties.getApi().getKey();
+    }
+
     // ================= CREATE ORDER =================
     @Override
     public PaymentLinkResponse createOrder(
@@ -67,13 +81,14 @@ public class PaymentServiceimpl implements PaymentService {
             PaymentMethod paymentMethod
     ) {
 
-        // 🔥 VALIDATION
+        // ================= VALIDATION =================
         if (booking == null || booking.getTotalPrice() == null) {
             throw new IllegalArgumentException("Invalid booking data");
         }
 
         Long amount = booking.getTotalPrice();
 
+        // ================= CREATE PAYMENT ORDER =================
         PaymentOrder order = new PaymentOrder();
 
         order.setAmount(amount);
@@ -83,61 +98,66 @@ public class PaymentServiceimpl implements PaymentService {
         order.setUserId(user.getId());
         order.setStatus(PaymentOrderStatus.PENDING);
 
-        // 🔥 FIX: MUST SET BEFORE SAVE
-        order.setPaymentLinkId("INIT-" + System.currentTimeMillis());
+        order.setPaymentLinkId(booking.getId().toString());
 
+        // save order
         PaymentOrder savedOrder = paymentOrderRepository.save(order);
+
+        // ================= SEND EVENTS =================
+        bookingEventProducer.sendBookingUpdateEvent(savedOrder);
+
+        notificationEventProducer.sendNotification(
+                savedOrder.getBookingId(),
+                savedOrder.getUserId(),
+                savedOrder.getSalonId()
+        );
 
         return switch (paymentMethod) {
 
-            // ================= STRIPE =================
-            case STRIPE -> {
-
-                PaymentLinkResponse response = new PaymentLinkResponse();
-
-                response.setUrl(
-                        createStripePaymentLink(
-                                user,
-                                amount,
-                                savedOrder.getId()
-                        )
-                );
-
-                response.setAmount(amount);
-                response.setMethod(paymentMethod);
-                response.setPaymentId(savedOrder.getId().toString());
-
-                // optional improvement
-                savedOrder.setPaymentLinkId(response.getPaymentId());
-                paymentOrderRepository.save(savedOrder);
-
-                yield response;
-            }
-
-            // ================= BAKONG =================
             case BAKONG -> {
 
-                PaymentLinkResponse response
+                PaymentLinkResponse res
                         = createBakongPaymentLink(
                                 user,
                                 amount,
                                 savedOrder.getId()
                         );
 
-                response.setAmount(amount);
-                response.setMethod(paymentMethod);
+                savedOrder.setExternalPaymentId(
+                        res.getPaymentId()
+                );
 
-                // optional improvement
-                savedOrder.setPaymentLinkId(savedOrder.getId().toString());
                 paymentOrderRepository.save(savedOrder);
 
-                yield response;
+                res.setAmount(amount);
+                res.setMethod(paymentMethod);
+
+                // IMPORTANT
+                res.setPaymentLinkId(
+                        savedOrder.getPaymentLinkId()
+                );
+
+                yield res;
+            }
+
+            case STRIPE -> {
+                PaymentLinkResponse res = new PaymentLinkResponse();
+
+                String url = createStripePaymentLink(user, amount, savedOrder.getId());
+
+                savedOrder.setExternalPaymentId("STRIPE-" + savedOrder.getId());
+                paymentOrderRepository.save(savedOrder);
+
+                res.setUrl(url);
+                res.setAmount(amount);
+                res.setMethod(paymentMethod);
+                res.setPaymentId(savedOrder.getId().toString());
+
+                yield res;
             }
 
             default ->
-                throw new IllegalArgumentException(
-                        "Unsupported payment method"
-                );
+                throw new IllegalArgumentException("Unsupported method");
         };
     }
 
@@ -154,56 +174,24 @@ public class PaymentServiceimpl implements PaymentService {
             IndividualInfo info = new IndividualInfo();
 
             // Merchant Info
-            info.setBakongAccountId(
-                    bakongAccountId
-            );
-
-            info.setAccountInformation(
-                    bakongAccountNumber
-            );
-
-            info.setAcquiringBank(
-                    bakongBankName
-            );
+            info.setBakongAccountId(bakongAccountId);
+            info.setAccountInformation(bakongAccountNumber);
+            info.setAcquiringBank(bakongBankName);
 
             // Currency & Amount
-            info.setCurrency(
-                    KHQRCurrency.KHR
-            );
-
-            info.setAmount(
-                    amount.doubleValue()
-            );
+            info.setCurrency(KHQRCurrency.KHR);
+            info.setAmount(amount.doubleValue());
 
             // Merchant Detail
-            info.setMerchantName(
-                    "Sopanha Phin"
-            );
-
-            info.setMerchantCity(
-                    "PHNOM PENH"
-            );
+            info.setMerchantName("Sopanha Phin");
+            info.setMerchantCity("PHNOM PENH");
 
             // Transaction Detail
-            info.setBillNumber(
-                    orderId.toString()
-            );
-
-            info.setMobileNumber(
-                    bakongAccountNumber
-            );
-
-            info.setStoreLabel(
-                    "Booking"
-            );
-
-            info.setTerminalLabel(
-                    "Web"
-            );
-
-            info.setPurposeOfTransaction(
-                    "Salon Booking"
-            );
+            info.setBillNumber(orderId.toString());
+            info.setMobileNumber(bakongAccountNumber);
+            info.setStoreLabel("Booking");
+            info.setTerminalLabel("Web");
+            info.setPurposeOfTransaction("Salon Booking");
 
             // 5 minutes expiry
             info.setExpirationTimestamp(
@@ -229,13 +217,9 @@ public class PaymentServiceimpl implements PaymentService {
                             .orElseThrow();
 
             // Save md5 transaction id
-            order.setExternalPaymentId(
-                    data.getMd5()
-            );
+            order.setExternalPaymentId(data.getMd5());
 
-            order.setStatus(
-                    PaymentOrderStatus.PENDING
-            );
+            order.setStatus(PaymentOrderStatus.PENDING);
 
             paymentOrderRepository.save(order);
 
@@ -243,14 +227,10 @@ public class PaymentServiceimpl implements PaymentService {
                     = new PaymentLinkResponse();
 
             // QR String
-            res.setQrCode(
-                    data.getQr()
-            );
+            res.setQrCode(data.getQr());
 
             // md5
-            res.setPaymentId(
-                    data.getMd5()
-            );
+            res.setPaymentId(data.getMd5());
 
             return res;
 
@@ -280,12 +260,14 @@ public class PaymentServiceimpl implements PaymentService {
                             .setMode(
                                     SessionCreateParams.Mode.PAYMENT
                             )
+                            //frontend will handle success/cancel, just pass orderId for reference
                             .setSuccessUrl(
-                                    "http://localhost:3000/success/"
+                                    "http://localhost:/success/"
                                     + orderId
                             )
+                            // frontend will handle success/cancel, just pass orderId for
                             .setCancelUrl(
-                                    "http://localhost:3000/cancel"
+                                    "http://localhost:/cancel"
                             )
                             .addPaymentMethodType(
                                     SessionCreateParams.PaymentMethodType.CARD
@@ -315,17 +297,14 @@ public class PaymentServiceimpl implements PaymentService {
                             )
                             .build();
 
-            Session session
-                    = Session.create(params);
+            Session session = Session.create(params);
 
             PaymentOrder order
                     = paymentOrderRepository
                             .findById(orderId)
                             .orElseThrow();
 
-            order.setExternalPaymentId(
-                    session.getId()
-            );
+            order.setExternalPaymentId(session.getId());
 
             paymentOrderRepository.save(order);
 
@@ -401,10 +380,7 @@ public class PaymentServiceimpl implements PaymentService {
                     Map<String, Object> body
                             = new HashMap<>();
 
-                    body.put(
-                            "md5",
-                            paymentLinkId
-                    );
+                    body.put("md5", paymentLinkId);
 
                     HttpEntity<Map<String, Object>> request
                             = new HttpEntity<>(
@@ -443,8 +419,9 @@ public class PaymentServiceimpl implements PaymentService {
                                 PaymentOrderStatus.SUCCESS
                         );
 
-                        paymentOrderRepository
-                                .save(paymentOrder);
+                        paymentOrderRepository.save(
+                                paymentOrder
+                        );
 
                         return true;
                     }
@@ -465,8 +442,7 @@ public class PaymentServiceimpl implements PaymentService {
 
                 try {
 
-                    Stripe.apiKey
-                            = stripeSecretKey;
+                    Stripe.apiKey = stripeSecretKey;
 
                     Session session
                             = Session.retrieve(
@@ -481,8 +457,9 @@ public class PaymentServiceimpl implements PaymentService {
                                 PaymentOrderStatus.SUCCESS
                         );
 
-                        paymentOrderRepository
-                                .save(paymentOrder);
+                        paymentOrderRepository.save(
+                                paymentOrder
+                        );
 
                         return true;
                     }

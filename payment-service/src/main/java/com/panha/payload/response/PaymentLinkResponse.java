@@ -15,8 +15,7 @@ public class PaymentLinkResponse {
     private String paymentId;
     private Long amount;
     private PaymentMethod method;
-
-   
+    private String paymentLinkId;
     private String qrCode;     
     private String publicKey;  
 }

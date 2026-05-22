@@ -10,6 +10,7 @@ import com.panha.dto.SalonDTO;
 import com.panha.dto.ServiceDTO;
 import com.panha.dto.UserDTO;
 import com.panha.modal.Booking;
+import com.panha.modal.PaymentOrder;
 import com.panha.modal.SalonReport;
 
 
@@ -28,6 +29,8 @@ public interface  BookingService {
 
    List<Booking> getBookingsByDate(LocalDate date, Long salonId);
     SalonReport getSalonReport(Long salonId);
+
+   Booking bookingSuccess(PaymentOrder order) throws Exception;
     
                    
     

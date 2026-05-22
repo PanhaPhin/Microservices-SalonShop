@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "stripe")
 public class StripeProperties {
+
     private Api api = new Api();
 
     public Api getApi() {

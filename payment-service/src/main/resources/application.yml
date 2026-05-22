@@ -11,15 +11,23 @@ spring:
     password: Nha1234567
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  
+
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
 
+  rabbitmq:
+    port: 5672
+    host: localhost
+    username: guest
+    password: guest
+
 
 stripe:
   api:
-    key: your_stripe_api_key
+    key: sk_test_51TZ3eaFBrN8MGMflk8r0MQjDpV5iaPYF2XXFsZW0KRpkoVD5OTF4I4Emh9leQnNgoXNwRlklsvkXAm8gvVNB8bdX00lc1zP8m9
 
 bakong:
   khqr:

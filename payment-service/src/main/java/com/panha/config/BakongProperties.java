@@ -29,7 +29,7 @@ public class BakongProperties {
         public void setSecret(String secret) {
             this.secret = secret;
         }
-
+        
         public String getBaseUrl() {
             return baseUrl;
         }
