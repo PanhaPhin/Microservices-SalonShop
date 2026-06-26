@@ -1,35 +1,62 @@
-import React from 'react'
-import { Card } from '@mui/material'
-import { NotificationsActive } from '@mui/icons-material'
+import React from "react";
+import { Card, Avatar } from "@mui/material";
+import { NotificationsActive } from "@mui/icons-material";
 
 const NotificationCard = () => {
-  const services = ['hair cut', 'shaving', 'massage', 'hair wash', 'beard trim']
+  const services = [
+    "Hair Cut",
+    "Shaving",
+    "Massage",
+    "Hair Wash",
+    "Beard Trim",
+  ];
 
   return (
     <Card
-      sx={{ bgcolor: '#EAF0F1' }}
-      className="cursor-pointer p-5 flex items-center gap-5"
+      elevation={0}
+      className="p-5 rounded-2xl border border-gray-200 hover:shadow-md transition-all duration-300"
     >
-      <NotificationsActive />
+      <div className="flex items-start gap-4">
+        <Avatar
+          sx={{
+            bgcolor: "#DCFCE7",
+            color: "#15803D",
+            width: 50,
+            height: 50,
+          }}
+        >
+          <NotificationsActive />
+        </Avatar>
 
-      <div>
-        <p className="text-sm text-gray-600">
-          Your booking got confirmed
-        </p>
+        <div className="flex-1">
+          <div className="flex justify-between items-start">
+            <h3 className="font-semibold text-gray-800">
+              Booking Confirmed
+            </h3>
 
-        <div className="flex flex-wrap gap-2 mt-1">
-          {services.map((item, index) => (
-            <span
-              key={index}
-              className="px-2 py-1 bg-white rounded text-sm"
-            >
-              {item}
+            <span className="text-xs text-gray-500">
+              Just now
             </span>
-          ))}
+          </div>
+
+          <p className="text-sm text-gray-600 mt-1">
+            Your appointment has been successfully confirmed.
+          </p>
+
+          <div className="flex flex-wrap gap-2 mt-3">
+            {services.map((item) => (
+              <span
+                key={item}
+                className="px-3 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </Card>
-  )
-}
+  );
+};
 
-export default NotificationCard
+export default NotificationCard;
