@@ -1,46 +1,38 @@
-import React from 'react'
-import { IconButton } from '@mui/material'
-import { Close } from '@mui/icons-material'
+import React from "react";
+import { IconButton } from "@mui/material";
+import { Close } from "@mui/icons-material";
 
-function SelectedServiceList() {
+const SelectedServiceList = ({
+  selectedServices,
+  onRemove,
+}) => {
   return (
-    <div className='py-5 space-y-3'>
-
-      {[1, 1, 1, 1, 1, 1].map((item, index) => (
+    <div className="space-y-3">
+      {selectedServices.map((item) => (
         <div
-          key={index}
-          className='py-3 px-4 rounded-md bg-slate-100 flex justify-between items-center'
+          key={item.id}
+          className="flex justify-between items-center bg-slate-100 rounded-md p-3"
         >
-
-          {/* LEFT SIDE */}
           <div>
-            <h1 className='font-medium'>
-              Man Beard
-            </h1>
+            <h3 className="font-medium">{item.name}</h3>
 
-            <p className='text-sm text-gray-500'>
-              45 mins
-            </p>
+            {item.price && (
+              <p className="text-sm text-gray-500">
+                ${item.price}
+              </p>
+            )}
           </div>
 
-          {/* RIGHT SIDE */}
-          <div className='flex items-center gap-2'>
-
-            <p className='font-semibold text-sm'>
-              100000KHR
-            </p>
-
-            <IconButton size='small'>
-              <Close fontSize='small' />
-            </IconButton>
-
-          </div>
-
+          <IconButton
+            color="error"
+            onClick={() => onRemove(item.id)}
+          >
+            <Close />
+          </IconButton>
         </div>
       ))}
-
     </div>
-  )
-}
+  );
+};
 
-export default SelectedServiceList
+export default SelectedServiceList;

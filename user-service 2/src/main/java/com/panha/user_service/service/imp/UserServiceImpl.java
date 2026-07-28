@@ -88,4 +88,9 @@ public class UserServiceImpl implements UserService {
                         -> new UserException("User not found with email " + email)
                 );
     }
+
+    @Override
+    public List<User> getUsersByIds(List<Long> ids) {
+        return userRepository.findAllById(ids);
+    }
 }

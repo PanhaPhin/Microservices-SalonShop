@@ -1,92 +1,130 @@
-import { AccountCircle, NotificationsActive } from '@mui/icons-material'
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+
+import {
+  AccountCircle,
+  NotificationsActive,
+} from "@mui/icons-material";
+
 import {
   Avatar,
-  IconButton,
+  Badge,
   Button,
-  Badge
-} from '@mui/material'
-import Menu from '@mui/material/Menu'
-import MenuItem from '@mui/material/MenuItem'
-import React from 'react'
-import { useNavigate } from 'react-router-dom'
+  IconButton,
+  Menu,
+  MenuItem,
+} from "@mui/material";
+
+import { getUser, logout } from "../../Redux/Auth/action";
 
 const Navbar = () => {
-  const id = React.useId()
-  const buttonId = `${id}-button`
-  const menuId = `${id}-menu`
+  const dispatch = useDispatch<any>();
+  const navigate = useNavigate();
 
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const navigate=useNavigate();
-  const open = Boolean(anchorEl)
+  const { auth } = useSelector((store: any) => store);
+
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const open = Boolean(anchorEl);
+
+  useEffect(() => {
+    const jwt = localStorage.getItem("jwt");
+
+    if (jwt) {
+      dispatch(getUser(jwt));
+    }
+  }, [dispatch]);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget)
-  }
+    setAnchorEl(event.currentTarget);
+  };
 
   const handleClose = () => {
-    setAnchorEl(null)
-  }
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    dispatch(logout());
+
+    localStorage.removeItem("jwt");
+
+    handleClose();
+
+    navigate("/login");
+  };
 
   return (
-    <div className='z-50 px-6 flex items-center justify-between py-2'>
-      
-      <div className='flex items-center gap-10'>
-        <h1 onClick={()=> navigate("/") } className='cursor-pointer font-bold text-2xl'>
-          Aura & Opal
+    <div className="z-50 flex items-center justify-between px-6 py-3 shadow-md">
+      {/* Left */}
+      <div className="flex items-center gap-10">
+        <h1
+          onClick={() => navigate("/")}
+          className="cursor-pointer text-2xl font-bold"
+        >
+          Nika
         </h1>
 
-        <div className='flex items-center gap-5'>
-          <h1>Home</h1>
-        </div>
+        <Button onClick={() => navigate("/")}>Home</Button>
       </div>
 
-      <div className="flex items-center gap-3 md:gap-6">
-
-        <Button variant="outlined">
-          Become partner
+      {/* Right */}
+      <div className="flex items-center gap-4">
+        <Button variant="outlined" onClick={() => navigate("/become-partner")}>
+          Become Partner
         </Button>
 
-        <IconButton onClick={()=>navigate("/notifications")}>
+        <IconButton onClick={() => navigate("/notifications")}>
           <Badge badgeContent={5} color="primary">
             <NotificationsActive color="primary" />
           </Badge>
         </IconButton>
 
-        {true?  <div className='flex gap-1 items-center'>
-          <h1 className='text-lg font-semibold'>Panha</h1>
+        {auth.user ? (
+          <>
+            <span className="font-semibold">{auth.user.fullName}</span>
 
-          <IconButton
-            id={buttonId}
-            aria-controls={open ? menuId : undefined}
-            aria-haspopup="true"
-            aria-expanded={open ? 'true' : undefined}
-            onClick={handleClick}
-          >
-            <Avatar />
+            <IconButton onClick={handleClick}>
+              <Avatar>
+                {auth.user.fullName ? auth.user.fullName.charAt(0).toUpperCase() : "U"}
+              </Avatar>
+            </IconButton>
+
+            <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
+              <MenuItem
+                onClick={() => {
+                  navigate("/profile");
+                  handleClose();
+                }}
+              >
+                My Profile
+              </MenuItem>
+
+              <MenuItem
+                onClick={() => {
+                  navigate("/bookings");
+                  handleClose();
+                }}
+              >
+                My Bookings
+              </MenuItem>
+
+              <MenuItem onClick={handleLogout}>Logout</MenuItem>
+            </Menu>
+          </>
+        ) : (
+          <IconButton onClick={() => navigate("/login")}>
+            <AccountCircle
+              sx={{
+                fontSize: 45,
+                color: "green",
+              }}
+            />
           </IconButton>
-
-          <Menu
-            id={menuId}
-            anchorEl={anchorEl}
-            open={open}
-            onClose={handleClose}
-          >
-            <MenuItem onClick={()=>{
-                navigate("/bookings")
-                handleClose()
-
-            }}>My Bookings</MenuItem>
-            <MenuItem onClick={handleClose}>Logout</MenuItem>
-          </Menu>
-
-        </div>
-
-        :<IconButton>
-            <AccountCircle sx={{fontSize:"45px", color:"green"}} />
-        </IconButton>}
+        )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Navbar
+export default Navbar;

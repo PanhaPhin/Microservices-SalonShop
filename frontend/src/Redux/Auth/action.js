@@ -1,88 +1,156 @@
-import { ErrorMessage } from "formik";
-import { API_BASE_URL } from "../../config/api";
-import { GET_USER_REQUEST, LOGIN_FAILURE, LOGIN_REQUEST, LOGIN_SUCCESS, LOGOUT, REGISTER_FAILURE, REGISTER_REQUEST, REGISTER_SUCCESS } from "./actionTypes"
+
+import axios from "axios";
+import{ API_BASE_URL } from "../../config/api";
+
+import {
+    REGISTER_REQUEST,
+    REGISTER_SUCCESS,
+    REGISTER_FAILURE,
+
+    LOGIN_REQUEST,
+    LOGIN_SUCCESS,
+    LOGIN_FAILURE,
+
+    GET_USER_REQUEST,
+    GET_USER_SUCCESS,
+    GET_USER_FAILURE,
+
+    LOGOUT,
+} from "./actionTypes";
+import Swal from "sweetalert2";
 
 
-export const registerUser =(userData) => async (dispatch) =>{
-    dispatch ({ type: REGISTER_REQUEST});
-    console.log("auth action - ", userData)
+export const registerUser = (userData) => async (dispatch) => {
+    dispatch({ type: REGISTER_REQUEST });
+    console.log("auth action - ", userData);
 
-    try{
+    try {
         const response = await axios.post(
             `${API_BASE_URL}/auth/signup`,
-            userData.userData
+            userData.data
         );
+
         const user = response.data;
-        if (user?.jwt){
+
+        dispatch({
+            type: REGISTER_SUCCESS,
+            payload: user,
+        });
+
+        // ✅ Success popup
+        Swal.fire({
+            icon: "success",
+            title: "Registration Successful",
+            text: "Your account has been created successfully.",
+            timer: 1500,
+            showConfirmButton: false,
+        });
+
+        if (user?.jwt) {
             localStorage.setItem("jwt", user.jwt);
-            userData.navigate("/");
         }
-        console.log("register :- ", user);
-        dispatch({ type: REGISTER_SUCCESS, payload: user});
-    } catch (error){
+
+        userData.navigate("/");
+
+    } catch (error) {
         console.log("error", error);
-        dispatch({type: REGISTER_FAILURE, payload: error})
+
+        dispatch({
+            type: REGISTER_FAILURE,
+            payload: error,
+        });
+
+        // ❌ Error popup
+        Swal.fire({
+            icon: "error",
+            title: "Registration Failed",
+            text:
+                error.response?.data?.message ||
+                "Unable to register. Please try again.",
+        });
     }
-}
+};
 
-const loginRequest = () => ({ type: LOGIN_REQUEST});
-const loginSuccess = (user) => ({type: LOGIN_SUCCESS, payload: user})
+const loginRequest = () => ({ type: LOGIN_REQUEST });
+const loginSuccess = (user) => ({ type: LOGIN_SUCCESS, payload: user })
 
-export const loginUser = (userData) => async (dispatch) =>{
-    dispatch({type:LOGIN_REQUEST});
-    try{
+export const loginUser = (userData) => async (dispatch) => {
+    dispatch({ type: LOGIN_REQUEST });
+
+    try {
         const response = await axios.post(
             `${API_BASE_URL}/auth/login`,
             userData.data
         );
+
         const user = response.data;
-        if(user.jwt){
-            localStorage.setItem("jwt",user.jwt);
-            if(user.role=== "ROLE_ADMIN"){
+
+        console.log("login", user);
+
+        dispatch({
+            type: LOGIN_SUCCESS,
+            payload: user,
+        });
+
+
+
+        // ✅ Success popup
+        Swal.fire({
+            icon: "success",
+            title: "Login Successful",
+            text: "Welcome back!",
+            timer: 1500,
+            showConfirmButton: false,
+        });
+
+        if (user.jwt) {
+            localStorage.setItem("jwt", user.jwt);
+
+            if (user.role === "ROLE_ADMIN") {
                 userData.navigate("/admin");
-            } else if (user?.role === "ROLE_SALON_OWNER"){
+            } else if (user.role === "ROLE_SALON_OWNER") {
                 userData.navigate("/salon-dashboard");
+            } else {
+                userData.navigate("/");
             }
-            else{
-                userData.navigate("/")
-
-            }
-
         }
-        console.log("login ", user);
-        dispatch({type: LOGIN_SUCCESS, payload: user});
 
+    } catch (error) {
+        console.log("error", error);
 
-    } catch (error){
-        console.log("error ", error);
-        dispatch({type: LOGIN_FAILURE})
+        dispatch({
+            type: LOGIN_FAILURE,
+            payload: error
+        });
+
+        // ❌ Error popup
+        Swal.fire({
+            icon: "error",
+            title: "Login Failed",
+            text: error.response?.data?.message || "Invalid email or password.",
+        });
     }
 };
 
-export const getUser = (token) =>{
-    return async (dispatch) =>{
-        dispatch ({ type: GET_USER_REQUEST});
-        try{
-            const response = await api.get(`/api/users/profile`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-            const user = response.data;
-            dispatch({ type: GET_USER_SUCCESS, payload: user});
-            console.log("get user ", user);
-        } catch (error){
-            console.log("error", error);
-            dispatch({type: GET_USER_FAILURE, payload: ErrorMessage
-            });
-        }
+export const getUser = (token) => {
+  return async (dispatch) => {
+    dispatch({ type: GET_USER_REQUEST });
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/users/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const user = response.data;
+      dispatch({ type: GET_USER_SUCCESS, payload: user });
+    } catch (error) {
+      dispatch({ type: GET_USER_FAILURE, payload: error });
     }
+  };
+};
 
-}
 
-export const logout = () =>{
-    return async (dispatch) =>{
-        dispatch({type: LOGOUT});
+export const logout = () => {
+    return async (dispatch) => {
+        dispatch({ type: LOGOUT });
         localStorage.clear();
     }
 }

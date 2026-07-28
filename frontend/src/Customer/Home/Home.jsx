@@ -3,7 +3,6 @@ import Banner from './Banner';
 import HomeServiceCard from './HomeServiceCard';
 import services from '../../Data/services';
 import SalonList from '../Salon/SalonList';
-import Navbar from '../Navbar/Navbar';
 
 
 const Home = () => {

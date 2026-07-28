@@ -1,7 +1,5 @@
 package com.panha.user_service.service.imp;
 
-
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,18 +41,22 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponse signup(SignupDTO req) throws Exception {
 
-        if (userRepository.findByUsername(req.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already exists");
+        if (userRepository.findByUsername(req.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists");
         }
 
         if (userRepository.findByEmail(req.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists");
         }
 
+        // Set username from email before Keycloak
+        req.setUsername(req.getEmail());
+
         keycloakService.createUser(req);
 
         User user = new User();
-        user.setUsername(req.getUsername());
+
+        user.setUsername(req.getEmail());
         user.setEmail(req.getEmail());
         user.setFullName(req.getFullName());
         user.setRole(req.getRole());
@@ -62,10 +64,11 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(user);
 
-        TokenResponse tokenResponse =
-                keycloakService.loginUser(req.getUsername(), req.getPassword());
+        TokenResponse tokenResponse
+                = keycloakService.loginUser(req.getEmail(), req.getPassword());
 
         AuthResponse res = new AuthResponse();
+
         res.setJwt(tokenResponse.getAccessToken());
         res.setRefresh_Token(tokenResponse.getRefreshToken());
         res.setRole(user.getRole());
@@ -83,7 +86,6 @@ public class AuthServiceImpl implements AuthService {
         res.setJwt(tokenResponse.getAccessToken());
         res.setRefresh_Token(tokenResponse.getRefreshToken());
         res.setMessage("Token refreshed");
-        
 
         return res;
     }

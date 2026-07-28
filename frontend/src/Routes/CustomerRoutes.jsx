@@ -11,7 +11,7 @@ import NotFound from '../Customer/NotFound/NotFound'
 
 const CustomerRoutes = () => {
   return (
-    <div>
+    <div className='pb-20'>
 
       <Navbar />
 

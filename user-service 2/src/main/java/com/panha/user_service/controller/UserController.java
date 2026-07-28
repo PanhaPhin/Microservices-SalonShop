@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.panha.user_service.modal.User;
@@ -63,6 +64,11 @@ public class UserController {
     @GetMapping("/api/users/{userId}")
     public ResponseEntity<User> getUserById(@PathVariable Long userId) throws Exception {
         return ResponseEntity.ok(userService.getUserById(userId));
+    }
+
+    @GetMapping("/api/users/batch")
+    public ResponseEntity<List<User>> getUsersByIds(@RequestParam("ids") List<Long> ids) {
+        return ResponseEntity.ok(userService.getUsersByIds(ids));
     }
 
     @PutMapping("/api/users/{id}")

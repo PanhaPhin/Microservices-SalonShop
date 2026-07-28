@@ -21,10 +21,11 @@ import {
   FETCH_SALON_BY_OWNER_SUCCESS,
   FETCH_SALON_BY_OWNER_FAILURE,
 
-  SEARCH_SALON_REQUEST,
-  SEARCH_SALONS_SUCCESS,
-  SEARCH_SALONS_FAILURE,
+  SEARCH_SALONS_REQUEST,
+SEARCH_SALONS_SUCCESS,
+SEARCH_SALONS_FAILURE,
 } from "./actionTypes";
+
 
 const API_BASE_URL = "/api/salons";
 
@@ -96,56 +97,61 @@ export const updateSalon =
     }
   };
 
+
 // Fetch All Salons
-export const fetchSalon = () => async (dispatch) => {
-  dispatch({ type: FETCH_SALONS_REQUEST });
+export const fetchSalons = () => async (dispatch) => {
+
+  dispatch({
+    type: FETCH_SALONS_REQUEST
+  });
 
   try {
-    const response = await api.get(API_BASE_URL, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("jwt")}`,
-      },
-    });
+
+    const response = await api.get(
+      API_BASE_URL,
+      {
+        headers:{
+          Authorization:`Bearer ${localStorage.getItem("jwt")}`,
+        },
+      }
+    );
+
 
     dispatch({
       type: FETCH_SALONS_SUCCESS,
       payload: response.data,
     });
-  } catch (error) {
+
+
+  } catch(error) {
+
     dispatch({
       type: FETCH_SALONS_FAILURE,
+      payload:error.response?.data?.message || error.message,
+    });
+
+  }
+
+};
+
+console.log("Salons")
+
+export const fetchSalonById = (salonId) => async (dispatch) => {
+  dispatch({ type: FETCH_SALON_BY_ID_REQUEST });
+  try {
+    const response = await api.get(`${API_BASE_URL}/${salonId}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+      },
+    });
+    dispatch({ type: FETCH_SALON_BY_ID_SUCCESS, payload: response.data });
+  } catch (error) {
+    dispatch({
+      type: FETCH_SALON_BY_ID_FAILURE,
       payload: error.response?.data?.message || error.message,
     });
   }
 };
-
-// Fetch Salon By ID
-export const fetchSalonById =
-  ({ salonId }) =>
-  async (dispatch) => {
-    dispatch({ type: FETCH_SALON_BY_ID_REQUEST });
-
-    try {
-      const response = await api.get(
-        `${API_BASE_URL}/${salonId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("jwt")}`,
-          },
-        }
-      );
-
-      dispatch({
-        type: FETCH_SALON_BY_ID_SUCCESS,
-        payload: response.data,
-      });
-    } catch (error) {
-      dispatch({
-        type: FETCH_SALON_BY_ID_FAILURE,
-        payload: error.response?.data?.message || error.message,
-      });
-    }
-  };
 
 // Fetch Salon By Owner
 export const fetchSalonByOwner =
@@ -179,9 +185,13 @@ export const fetchSalonByOwner =
 export const searchSalons =
   (jwt, city) =>
   async (dispatch) => {
-    dispatch({ type: SEARCH_SALON_REQUEST });
+
+    dispatch({
+      type: SEARCH_SALONS_REQUEST
+    });
 
     try {
+
       const response = await api.get(
         `${API_BASE_URL}/search`,
         {
@@ -198,10 +208,13 @@ export const searchSalons =
         type: SEARCH_SALONS_SUCCESS,
         payload: response.data,
       });
+
     } catch (error) {
+
       dispatch({
         type: SEARCH_SALONS_FAILURE,
         payload: error.response?.data?.message || error.message,
       });
+
     }
   };

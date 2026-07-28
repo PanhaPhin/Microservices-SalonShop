@@ -11,20 +11,34 @@ import Notification from './Customer/Notification/Notification.jsx'
 import SalonDashboard from './Seller/SalonDashboard.jsx'
 import Navbar from './Customer/Navbar/Navbar.js'
 import CustomerRoutes from './Routes/CustomerRoutes.jsx'
+import LoginForm from './Auth/LoginForm.jsx'
+import Auth from './Auth/Auth.jsx'
+
 
 function App() {
   return (
     <ThemeProvider theme={greenTheme}>
 
-    
+
 
       <Routes>
 
         <Route
           path='/salon-dashboard/*'
           element={<SalonDashboard />}
-        /> 
-        <Route path="*" element={<CustomerRoutes />} /> 
+        />
+
+        <Route
+          path='/register'
+          element={<Auth />}
+        />
+
+        <Route
+          path='/login'
+          element={<Auth />}
+        />
+
+        <Route path="*" element={<CustomerRoutes />} />
       </Routes>
 
     </ThemeProvider>

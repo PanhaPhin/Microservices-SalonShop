@@ -3,7 +3,10 @@ package com.panhaphin.controller;
 import java.util.Set;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.panhaphin.modal.Category;
 import com.panhaphin.service.CategoryService;
@@ -18,7 +21,7 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     // Get all categories by salon
-    @GetMapping("/salon/{id}")
+    @GetMapping("/salon/{salonId}")
     public ResponseEntity<Set<Category>> getCategoriesBySalon(
             @PathVariable Long salonId) {
 

@@ -1,6 +1,8 @@
 package com.panha.controller;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -12,11 +14,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.panha.payload.SalonDTO;
+
+import com.panha.mapper.ReviewMapper;
 import com.panha.model.Review;
 import com.panha.payload.ApiResponse;
 import com.panha.payload.ReviewRequest;
+import com.panha.payload.SalonDTO;
 import com.panha.payload.UserDTO;
+import com.panha.payload.dto.ReviewDTO;
 import com.panha.service.ReviewService;
 import com.panha.service.client.SalonFeignClient;
 import com.panha.service.client.UserFeignClient;
@@ -44,22 +49,36 @@ public class ReviewController {
 
         Review review = reviewService.createReview(req, user, salon);
 
-        return ResponseEntity.ok(review);
 
+        return ResponseEntity.ok(review);
     }
 
     @GetMapping("/salon/{salonId}")
-    public ResponseEntity<List<Review>> getReviewsBySalonId(
-            @PathVariable long salonId,
-            @RequestHeader("Authorization") String jwt
+    public ResponseEntity<List<ReviewDTO>> getReviewsBySalonId(
+            @PathVariable long salonId
     ) throws Exception {
 
-        UserDTO user = userFeignClient.getUserProfile(jwt).getBody();
-        SalonDTO salon = salonFeignClient.getSalonById(salonId).getBody();
+        List<Review> reviews = reviewService.getReviewsBySalonId(salonId);
 
-        List<Review> reviews = reviewService.getReviewsBySalonId(salon.getId());
+        if (reviews.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
 
-        return ResponseEntity.ok(reviews);
+        // batch-fetch all reviewers in one call instead of one Feign call per review
+        List<Long> userIds = reviews.stream()
+                .map(Review::getUserId)
+                .distinct()
+                .toList();
+
+        List<UserDTO> users = userFeignClient.getUsersByIds(userIds).getBody();
+        Map<Long, UserDTO> userMap = users.stream()
+                .collect(Collectors.toMap(UserDTO::getId, u -> u));     
+
+        List<ReviewDTO> reviewDTOs = reviews.stream()
+                .map((Review review) -> ReviewMapper.toDTO(review, userMap.get(review.getUserId())))
+                .toList();
+
+        return ResponseEntity.ok(reviewDTOs);
     }
 
     @PutMapping("/{reviewId}")
@@ -71,11 +90,7 @@ public class ReviewController {
 
         UserDTO user = userFeignClient.getUserProfile(jwt).getBody();
 
-        Review review = reviewService.updateReview(
-                req,
-                reviewId,
-                user.getId()
-        );
+        Review review = reviewService.updateReview(req, reviewId, user.getId());
 
         return ResponseEntity.ok(review);
     }
@@ -88,16 +103,11 @@ public class ReviewController {
 
         UserDTO user = userFeignClient.getUserProfile(jwt).getBody();
 
-
-        reviewService.deleteReview(
-                reviewId,
-                user.getId()
-        );
+        reviewService.deleteReview(reviewId, user.getId());
 
         ApiResponse apiResponse = new ApiResponse();
         apiResponse.setMessage("Review deleted successfully");
 
         return ResponseEntity.ok(apiResponse);
     }
-
 }

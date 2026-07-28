@@ -30,12 +30,15 @@ public class KeycloakService {
     private static final String KEYCLOAK_BASE_URL = "http://localhost:8080";
 
     private static final String REALM = "master";
+    
 
     private static final String KEYCLOAK_ADMIN_USERS
             = KEYCLOAK_BASE_URL + "/admin/realms/master/users";
+  
 
     private static final String TOKEN_URL
             = KEYCLOAK_BASE_URL + "/realms/master/protocol/openid-connect/token";
+
 
     private static final String CLIENT_ID = "salon-booking-client";
     private static final String CLIENT_SECRET = "Zj1p8I7NgI69f5cfAzkesSeY3l7CW9GB";
@@ -105,8 +108,6 @@ public class KeycloakService {
                     "Failed to create user in Keycloak: " + response.getStatusCode()
             );
         }
-
-       
 
         KeycloakUserDTO user
                 = fetchFirstUserByUsername(signupDTO.getUsername(), token);
@@ -272,29 +273,62 @@ public class KeycloakService {
         }
     }
 
+//     public TokenResponse loginUser(String username, String password) {
+//         HttpHeaders headers = new HttpHeaders();
+//         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+//         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+//         body.add("grant_type", "password");
+//         body.add("client_id", CLIENT_ID);
+//         body.add("client_secret", CLIENT_SECRET);
+//         body.add("username", username);
+//         body.add("password", password);
+//         HttpEntity<MultiValueMap<String, String>> request
+//                 = new HttpEntity<>(body, headers);
+//         ResponseEntity<TokenResponse> response = restTemplate.exchange(
+//                 TOKEN_URL,
+//                 HttpMethod.POST,
+//                 request,
+//                 TokenResponse.class
+//         );
+//         return response.getBody();
+//     }
     public TokenResponse loginUser(String username, String password) {
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        try {
 
-        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("grant_type", "password");
-        body.add("client_id", CLIENT_ID);
-        body.add("client_secret", CLIENT_SECRET);
-        body.add("username", username);
-        body.add("password", password);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        HttpEntity<MultiValueMap<String, String>> request
-                = new HttpEntity<>(body, headers);
+            MultiValueMap<String, String> body
+                    = new LinkedMultiValueMap<>();
 
-        ResponseEntity<TokenResponse> response = restTemplate.exchange(
-                TOKEN_URL,
-                HttpMethod.POST,
-                request,
-                TokenResponse.class
-        );
+            body.add("grant_type", "password");
+            body.add("client_id", CLIENT_ID);
+            body.add("client_secret", CLIENT_SECRET);
+            body.add("username", username);
+            body.add("password", password);
 
-        return response.getBody();
+            HttpEntity<MultiValueMap<String, String>> request
+                    = new HttpEntity<>(body, headers);
+
+            ResponseEntity<TokenResponse> response
+                    = restTemplate.exchange(
+                            TOKEN_URL,
+                            HttpMethod.POST,
+                            request,
+                            TokenResponse.class
+                    );
+
+            return response.getBody();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            throw new RuntimeException(
+                    "Keycloak login failed: " + e.getMessage()
+            );
+        }
     }
 
     public TokenResponse refreshToken(String refreshToken) {

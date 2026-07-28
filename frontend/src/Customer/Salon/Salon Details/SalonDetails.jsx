@@ -1,70 +1,63 @@
-import React, { useState } from 'react'
-import { Button, Divider } from '@mui/material'
-import SalonDetail from './SalonDetail'
-import SalonServiceDetails from './SalonServiceDetails'
-import Review from '../../Review/Review'
-import CreateReviewForm from '../../Review/CreateReviewForm'
+import React, { useState } from "react";
+import { Button, Divider } from "@mui/material";
+
+import SalonDetail from "./SalonDetail";
+import SalonServiceDetails from "./SalonServiceDetails";
+import Review from "../../Review/Review";
+import CreateReviewForm from "../../Review/CreateReviewForm";
 
 const tabs = [
-    { name: "All services" },
-    { name: "Reviews" },
-    { name: "Create Review" }
-]
+  { name: "All Services" },
+  { name: "Reviews" },
+  { name: "Create Review" },
+];
 
 const SalonDetails = () => {
+  const [activeTab, setActiveTab] = useState(tabs[0].name);
 
-    const [activeTab, setActiveTab] = useState(tabs[0])
+  return (
+    <div className="px-5 lg:px-20">
 
-    const handleActiveTab = (tab) => () => {
-        setActiveTab(tab)
-    }
+      <SalonDetail />
 
-    return (
-        <div className='px-5 lg:px-20'>
+      <div className="mt-6 space-y-4">
 
-            {/* Salon header */}
-            <SalonDetail />
-
-            {/* Tabs */}
-            <div className='space-y-4 mt-5'>
-
-                <div className='flex gap-4 flex-wrap'>
-                    {tabs.map((tab) => (
-                        <Button
-                            key={tab.name}
-                            onClick={handleActiveTab(tab)}
-                            variant={tab.name === activeTab.name ? "contained" : "outlined"}
-                        >
-                            {tab.name}
-                        </Button>
-                    ))}
-                </div>
-
-                <Divider />
-
-            </div>
-
-
-            <div className='py-5'>
-
-                {activeTab.name === "Create Review" ? (
-
-                   <CreateReviewForm/>
-
-                ) : activeTab.name === "Reviews" ? (
-
-                    <Review />
-
-                ) : (
-
-                    <SalonServiceDetails />
-
-                )}
-
-            </div>
-
+        <div className="flex flex-wrap gap-3">
+          {tabs.map((tab) => (
+            <Button
+              key={tab.name}
+              variant={
+                activeTab.name === tab.name
+                  ? "contained"
+                  : "outlined"
+              }
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab.name}
+            </Button>
+          ))}
         </div>
-    )
-}
 
-export default SalonDetails
+        <Divider />
+
+        <div className="py-5">
+          {activeTab.name === "All Services" && (
+            <SalonServiceDetails />
+          )}
+
+          {activeTab.name === "Reviews" && (
+            <Review />
+          )}
+
+          {activeTab.name === "Create Review" && (
+            <CreateReviewForm />
+          )}
+        </div>
+
+      </div>
+
+    </div>
+  );
+};
+
+export default SalonDetails;

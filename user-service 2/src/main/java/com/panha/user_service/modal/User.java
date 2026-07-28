@@ -49,7 +49,7 @@ public class User {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @CreationTimestamp
+ 
     private LocalDateTime updatedAt;
 
     @NotBlank(message = "password is mandatory")
