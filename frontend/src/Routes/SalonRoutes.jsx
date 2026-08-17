@@ -7,9 +7,12 @@ import CreateServiceForm from "../Salon/Services/CreateServiceForm";
 import BookingTables from "../Salon/Booking/BookingTable";
 import TransactionTable from "../Salon/Transaction/TransactionTable";
 import Category from "../Salon/Category/Category";
-import Notification from "../Customer/Notification/Notification";
 import Payment from "../Salon/Payment/Payment";
 import Profile from "../Salon/Profile/Profile";
+import SalonDashboard from "../Seller/SalonDashboard";
+import ViewAccount from "../Salon/Profile/ViewAccount";
+import Notification from "../Salon/Notifications/Notification";
+import CreateNotificationForm from "../Salon/Notifications/CreateNotificationForm";
 
 const SalonRoutes = () => {
   return (
@@ -20,7 +23,10 @@ const SalonRoutes = () => {
       <Route path="/booking" element={<BookingTables />} />
       <Route path="/category" element={<Category />} />
       <Route path="/transaction" element={<TransactionTable />} />
-      <Route path="/notifications" element={<Notification />} />
+      <Route path= "/notifications" element={<Notification />} />
+      <Route path="/add-notification" element={<CreateNotificationForm />} />
+      <Route path="/salon-dashboard" element={<SalonDashboard />} />
+      <Route path="/view-account" element={<ViewAccount />} />
       <Route path="/payment" element={<Payment />} />
       <Route path="/account" element={<Profile />} />
     </Routes>

@@ -1,287 +1,814 @@
-import React, { useState } from 'react'
-import ProfileFieldCard from '../Profile/ProfileFildCard'
+import React, { useMemo, useState } from "react";
+import { styled } from "@mui/material/styles";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  tableCellClasses,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  InputBase,
+  IconButton,
+  Tooltip,
+  Avatar,
+} from "@mui/material";
 
-function SalonDetails() {
-  const salonInfo = [
-    { keys: 'Type',        value: 'Hair & Beauty Salon',    icon: '✂️' },
-    { keys: 'Location',    value: 'Phnom Penh, Cambodia',   icon: '📍' },
-    { keys: 'Phone',       value: '+855 12 345 678',        icon: '📞' },
-    { keys: 'Walk-ins',    value: 'Welcome',                icon: '🚶' },
-    { keys: 'Founded',     value: '2019',                   icon: '📅' },
-  ]
+import {
+  Search,
+  Close,
+  Storefront,
+  Person,
+  Language,
+  PhoneIphone,
+  Block,
+  CheckCircle,
+  Groups,
+  Verified,
+  Visibility,
+} from "@mui/icons-material";
 
-  const ownerInfo = [
-    { keys: 'Owner',       value: 'Nika Chan',              icon: '👤' },
-    { keys: 'Email',       value: 'nika@nikasalon.com',     icon: '✉️' },
-    { keys: 'Role',        value: 'Owner & Head Stylist',   icon: '💼' },
-  ]
+import ViewAccount from "./ViewAccount";
 
-  const hoursInfo = [
-    { keys: 'Open',        value: 'Mon – Sat  8:00 AM',     icon: '🕗' },
-    { keys: 'Close',       value: 'Mon – Sat  7:00 PM',     icon: '🔒' },
-    { keys: 'Sunday',      value: 'Closed',                 icon: '❌' },
-  ]
+const GREEN = "#15803d";
+const GREEN_SOFT = "rgba(21,128,61,0.10)";
+
+const RED = "#C4695A";
+const RED_SOFT = "rgba(196,105,90,0.10)";
+
+const initialAccounts = [
+  {
+    name: "Nika Chan",
+    email: "nika@nikasalon.com",
+    role: "salon_owner",
+    platform: "web",
+    joined: "Jan 12, 2024",
+    status: "active",
+  },
+  {
+    name: "Sophea Khun",
+    email: "sophea.k@gmail.com",
+    role: "user",
+    platform: "app",
+    joined: "Mar 3, 2025",
+    status: "active",
+  },
+  {
+    name: "Dara Meas",
+    email: "dara.meas@gmail.com",
+    role: "user",
+    platform: "app",
+    joined: "Apr 18, 2025",
+    status: "active",
+  },
+  {
+    name: "Golden Scissors Salon",
+    email: "contact@goldenscissors.com",
+    role: "salon_owner",
+    platform: "web",
+    joined: "Jun 9, 2025",
+    status: "blocked",
+  },
+  {
+    name: "Lina Try",
+    email: "lina.try@gmail.com",
+    role: "user",
+    platform: "web",
+    joined: "Jul 22, 2025",
+    status: "active",
+  },
+  {
+    name: "Marcus Vann",
+    email: "marcus.v@gmail.com",
+    role: "user",
+    platform: "app",
+    joined: "Aug 2, 2025",
+    status: "blocked",
+  },
+  {
+    name: "Chan Pisey",
+    email: "pisey.chan@gmail.com",
+    role: "salon_owner",
+    platform: "app",
+    joined: "Aug 14, 2025",
+    status: "active",
+  },
+];
+
+const roleMeta = {
+  salon_owner: {
+    label: "Salon Owner",
+    icon: Storefront,
+    color: GREEN,
+    soft: GREEN_SOFT,
+  },
+
+  user: {
+    label: "User",
+    icon: Person,
+    color: "#5B6472",
+    soft: "rgba(91,100,114,0.10)",
+  },
+};
+
+const platformMeta = {
+  web: {
+    label: "Web",
+    icon: Language,
+  },
+
+  app: {
+    label: "App",
+    icon: PhoneIphone,
+  },
+};
+
+const avatarPalette = [
+  "#7C9885",
+  "#C9A227",
+  "#E8927C",
+  "#8B93A0",
+  "#15803d",
+];
+
+const avatarColor = (name) =>
+  avatarPalette[name.charCodeAt(0) % avatarPalette.length];
+
+const initials = (name) =>
+  name
+    .split(" ")
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+const StyledTableCell = styled(TableCell)(() => ({
+  [`&.${tableCellClasses.head}`]: {
+    backgroundColor: GREEN,
+    color: "#fff",
+    fontWeight: 600,
+    fontSize: 12,
+    letterSpacing: "0.04em",
+    textTransform: "uppercase",
+    border: 0,
+    padding: "14px 16px",
+  },
+
+  [`&.${tableCellClasses.body}`]: {
+    fontSize: 14,
+    padding: "12px 16px",
+    borderBottom: "1px solid rgba(18,24,31,0.06)",
+  },
+}));
+
+const StyledTableRow = styled(TableRow)(() => ({
+  transition: "background-color 0.15s ease",
+
+  "&:hover": {
+    backgroundColor: "rgba(21,128,61,0.04)",
+  },
+
+  "&:last-child td, &:last-child th": {
+    border: 0,
+  },
+}));
+
+const FILTERS = [
+  {
+    key: "all",
+    label: "All",
+  },
+  {
+    key: "salon_owner",
+    label: "Salon Owners",
+  },
+  {
+    key: "user",
+    label: "Users",
+  },
+  {
+    key: "blocked",
+    label: "Blocked",
+  },
+];
+
+export default function Profile() {
+  const [query, setQuery] = useState("");
+
+  const [filter, setFilter] = useState("all");
+
+  const [accounts, setAccounts] = useState(initialAccounts);
+
+  // Selected account for ViewAccount dialog
+  const [selectedAccount, setSelectedAccount] = useState(null);
+
+  // ViewAccount dialog state
+  const [viewOpen, setViewOpen] = useState(false);
+
+  /*
+   * Account statistics
+   */
+  const counts = useMemo(
+    () => ({
+      total: accounts.length,
+
+      owners: accounts.filter((a) => a.role === "salon_owner").length,
+
+      users: accounts.filter((a) => a.role === "user").length,
+
+      blocked: accounts.filter((a) => a.status === "blocked").length,
+    }),
+    [accounts]
+  );
+
+  /*
+   * Filter + Search
+   */
+  const filtered = useMemo(() => {
+    let list = accounts;
+
+    if (filter === "salon_owner") {
+      list = list.filter((a) => a.role === "salon_owner");
+    } else if (filter === "user") {
+      list = list.filter((a) => a.role === "user");
+    } else if (filter === "blocked") {
+      list = list.filter((a) => a.status === "blocked");
+    }
+
+    const q = query.trim().toLowerCase();
+
+    if (q) {
+      list = list.filter(
+        (a) =>
+          a.name.toLowerCase().includes(q) ||
+          a.email.toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [accounts, filter, query]);
+
+  /*
+   * Toggle Account Status
+   */
+  const toggleStatus = (email) => {
+    setAccounts((prev) =>
+      prev.map((a) =>
+        a.email === email
+          ? {
+              ...a,
+              status: a.status === "active" ? "blocked" : "active",
+            }
+          : a
+      )
+    );
+
+    // Update currently opened account
+    setSelectedAccount((prev) => {
+      if (!prev || prev.email !== email) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        status: prev.status === "active" ? "blocked" : "active",
+      };
+    });
+  };
+
+  /*
+   * Open View Account
+   */
+  const handleViewAccount = (account) => {
+    setSelectedAccount(account);
+    setViewOpen(true);
+  };
+
+  /*
+   * Close View Account
+   */
+  const handleCloseView = () => {
+    setViewOpen(false);
+    setSelectedAccount(null);
+  };
 
   return (
-    <div className="mt-4 flex flex-col gap-4">
+    <div
+      className="min-h-screen w-full px-6 py-8 md:px-10 lg:px-14"
+      style={{
+        backgroundColor: "#F9FAFB",
+        fontFamily: "'Manrope', 'Inter', sans-serif",
+      }}
+    >
+      {/* =========================================================
+          HEADER
+      ========================================================= */}
+      <div className="mb-6">
+        <p
+          className="text-xs uppercase tracking-[0.25em] mb-2"
+          style={{
+            color: "#8B7A3F",
+          }}
+        >
+          Platform Administration
+        </p>
 
-      {/* ── Salon Info ── */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <span className="text-green-700 font-bold text-sm">Salon Info</span>
-          <div className="flex-1 h-px bg-gray-100 ml-1" />
-        </div>
-        <div className="divide-y divide-gray-100">
-          {salonInfo.map(item => (
-            <ProfileFieldCard
-              key={item.keys}
-              keys={item.keys}
-              value={item.value}
-              icon={item.icon}
-            />
-          ))}
-        </div>
+        <h1
+          className="font-semibold text-2xl md:text-3xl"
+          style={{
+            fontFamily: "'Fraunces', serif",
+            color: "#12181F",
+          }}
+        >
+          Accounts
+        </h1>
+
+        <p
+          className="text-sm mt-1"
+          style={{
+            color: "#8B93A0",
+          }}
+        >
+          All salon owners and users registered via web or app.
+        </p>
       </div>
 
-      {/* ── Owner Details ── */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <span className="text-green-700 font-bold text-sm">Owner Details</span>
-          <div className="flex-1 h-px bg-gray-100 ml-1" />
-        </div>
-        <div className="divide-y divide-gray-100">
-          {ownerInfo.map(item => (
-            <ProfileFieldCard
-              key={item.keys}
-              keys={item.keys}
-              value={item.value}
-              icon={item.icon}
-            />
-          ))}
-        </div>
-      </div>
+      {/* =========================================================
+          STAT CARDS
+      ========================================================= */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {[
+          {
+            label: "Total Accounts",
+            value: counts.total,
+            icon: Groups,
+            accent: GREEN,
+            soft: GREEN_SOFT,
+          },
 
-      {/* ── Opening Hours ── */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-          <span className="text-green-700 font-bold text-sm">Opening Hours</span>
-          <div className="flex-1 h-px bg-gray-100 ml-1" />
-        </div>
-        <div className="divide-y divide-gray-100">
-          {hoursInfo.map(item => (
-            <ProfileFieldCard
-              key={item.keys}
-              keys={item.keys}
-              value={item.value}
-              icon={item.icon}
-            />
-          ))}
-        </div>
-      </div>
+          {
+            label: "Salon Owners",
+            value: counts.owners,
+            icon: Storefront,
+            accent: GREEN,
+            soft: GREEN_SOFT,
+          },
 
-    </div>
-  )
-}
+          {
+            label: "Users",
+            value: counts.users,
+            icon: Person,
+            accent: "#5B6472",
+            soft: "rgba(91,100,114,0.10)",
+          },
 
-function Profile() {
-  const [activeTab, setActiveTab] = useState('services')
-  const [followed, setFollowed] = useState(false)
-
-  const stats = [
-    { label: 'Services', value: '24' },
-    { label: 'Reviews',  value: '4.9★' },
-    { label: 'Clients',  value: '1.2K' },
-  ]
-
-  const services = [
-    { name: 'Classic Haircut',  duration: '30 min', price: '$25', tag: 'Popular' },
-    { name: 'Hair Coloring',    duration: '90 min', price: '$80', tag: 'Premium' },
-    { name: 'Facial Treatment', duration: '60 min', price: '$55', tag: null },
-    { name: 'Shaving & Trim',   duration: '45 min', price: '$35', tag: null },
-  ]
-
-  const tabs = ['services', 'details', 'gallery', 'reviews']
-
-  return (
-    <div className="min-h-screen bg-gray-50 font-[Inter,system-ui]">
-
-      {/* ── Top Nav ── */}
-      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-        <button className="p-1.5 rounded-lg hover:bg-gray-100 transition">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M19 12H5M5 12l7-7M5 12l7 7" stroke="#111" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-        <span className="text-sm font-semibold text-gray-900">Salon Profile</span>
-        <button className="p-1.5 rounded-lg hover:bg-gray-100 transition">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="5"  r="1.5" fill="#111"/>
-            <circle cx="12" cy="12" r="1.5" fill="#111"/>
-            <circle cx="12" cy="19" r="1.5" fill="#111"/>
-          </svg>
-        </button>
-      </div>
-
-      <div className="max-w-2xl mx-auto px-4 pb-10">
-
-        {/* ── Hero ── */}
-        <div className="relative mt-0 -mx-4">
-          <div className="w-full h-64 bg-gradient-to-br from-green-800 to-emerald-600 overflow-hidden">
-            <img
-              className="w-full h-full object-cover opacity-80 mix-blend-luminosity"
-              src=""
-              alt="Nika Salon"
-              onError={e => { e.target.style.display = 'none' }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 px-5 pb-5">
-            <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-emerald-300 mb-1.5">
-              ✦ Verified Salon
-            </span>
-            <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow">Nika Salon</h1>
-            <p className="text-sm text-white/70 mt-0.5">📍 Phnom Penh, Cambodia</p>
-          </div>
-          <div className="absolute -bottom-6 right-5 w-14 h-14 rounded-2xl bg-white shadow-lg border-2 border-white flex items-center justify-center text-2xl">
-            ✂️
-          </div>
-        </div>
-
-        <div className="mt-10" />
-
-        {/* ── Stats ── */}
-        <div className="grid grid-cols-3 gap-3">
-          {stats.map(s => (
-            <div key={s.label} className="bg-white rounded-xl border border-gray-100 shadow-sm py-3 text-center">
-              <p className="text-lg font-bold text-gray-900">{s.value}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{s.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* ── Bio ── */}
-        <div className="mt-4 bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-4">
-          <p className="text-sm text-gray-700 leading-relaxed">
-            Premium hair & beauty salon with 5+ years of experience. Specializing in cuts, coloring, facials and more. Walk-ins welcome!
-          </p>
-          <div className="flex flex-wrap gap-2 mt-3">
-            {['Hair Care', 'Coloring', 'Facial', 'Shaving'].map(tag => (
-              <span key={tag} className="text-xs font-medium text-green-700 bg-green-50 border border-green-100 px-2.5 py-1 rounded-full">
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Action Buttons ── */}
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={() => setFollowed(!followed)}
-            className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all
-              ${followed
-                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                : 'bg-green-700 text-white hover:bg-green-800 shadow-sm shadow-green-700/20'}`}
+          {
+            label: "Blocked",
+            value: counts.blocked,
+            icon: Block,
+            accent: RED,
+            soft: RED_SOFT,
+          },
+        ].map(({ label, value, icon: Icon, accent, soft }) => (
+          <div
+            key={label}
+            className="rounded-2xl p-5 border"
+            style={{
+              backgroundColor: "#fff",
+              borderColor: "rgba(18,24,31,0.06)",
+            }}
           >
-            {followed ? '✓ Following' : '+ Follow'}
-          </button>
-          <button className="flex-1 py-2.5 text-sm font-semibold bg-white border border-gray-200 text-gray-800 rounded-xl hover:bg-gray-50 transition shadow-sm">
-            Book Now
-          </button>
-          <button className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition shadow-sm">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="18" cy="5"  r="2.5" stroke="currentColor" strokeWidth="1.75"/>
-              <circle cx="6"  cy="12" r="2.5" stroke="currentColor" strokeWidth="1.75"/>
-              <circle cx="18" cy="19" r="2.5" stroke="currentColor" strokeWidth="1.75"/>
-              <path d="M8.5 10.5l7-4M8.5 13.5l7 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          </button>
-        </div>
+            <div className="flex items-center justify-between mb-3">
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center"
+                style={{
+                  backgroundColor: soft,
+                }}
+              >
+                <Icon
+                  sx={{
+                    fontSize: 18,
+                    color: accent,
+                  }}
+                />
+              </div>
+            </div>
 
-        {/* ── Tabs ── */}
-        <div className="mt-6 flex border-b border-gray-200">
-          {tabs.map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider transition
-                ${activeTab === tab
-                  ? 'border-b-2 border-green-700 text-green-700 -mb-px'
-                  : 'text-gray-400 hover:text-gray-600'}`}
+            <p
+              className="text-2xl font-semibold"
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                color: "#12181F",
+              }}
             >
-              {tab}
-            </button>
-          ))}
+              {value}
+            </p>
+
+            <p
+              className="text-xs mt-1"
+              style={{
+                color: "#8B93A0",
+              }}
+            >
+              {label}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* =========================================================
+          FILTER + SEARCH
+      ========================================================= */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
+        {/* Filters */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {FILTERS.map((f) => {
+            const active = filter === f.key;
+
+            return (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className="text-xs font-semibold px-3.5 py-1.5 rounded-full transition-colors"
+                style={{
+                  backgroundColor: active ? GREEN : "#fff",
+                  color: active ? "#fff" : "#6B6B6B",
+                  border: `1px solid ${
+                    active ? GREEN : "rgba(18,24,31,0.10)"
+                  }`,
+                }}
+              >
+                {f.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* ── Tab: Services ── */}
-        {activeTab === 'services' && (
-          <div className="mt-4 flex flex-col gap-3">
-            {services.map(s => (
-              <div key={s.name} className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3.5 flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-gray-900">{s.name}</p>
-                    {s.tag && (
-                      <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                        {s.tag}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-400 mt-0.5">⏱ {s.duration}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-green-700">{s.price}</span>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M6 4l4 4-4 4" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Search */}
+        <div
+          className="flex items-center gap-2 rounded-xl px-3 py-2 border w-full md:w-72"
+          style={{
+            backgroundColor: "#fff",
+            borderColor: "rgba(18,24,31,0.08)",
+          }}
+        >
+          <Search
+            sx={{
+              fontSize: 18,
+              color: "#8B93A0",
+            }}
+          />
 
-        {/* ── Tab: Details ── */}
-        {activeTab === 'details' && <SalonDetails />}
+          <InputBase
+            placeholder="Search by name or email…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            sx={{
+              fontSize: 14,
+              flex: 1,
+            }}
+          />
 
-        {/* ── Tab: Gallery ── */}
-        {activeTab === 'gallery' && (
-          <div className="mt-4 grid grid-cols-3 gap-1.5">
-            {Array.from({ length: 9 }).map((_, i) => (
-              <div key={i} className="aspect-square bg-gradient-to-br from-gray-200 to-gray-100 rounded-lg hover:opacity-80 transition cursor-pointer" />
-            ))}
-          </div>
-        )}
-
-        {/* ── Tab: Reviews ── */}
-        {activeTab === 'reviews' && (
-          <div className="mt-4 flex flex-col gap-3">
-            {[
-              { name: 'Sophea K.', rating: 5, text: 'Amazing haircut! Very clean and professional.', date: '2 days ago' },
-              { name: 'Dara M.',   rating: 5, text: 'Best salon in Phnom Penh. Will come back!',     date: '1 week ago' },
-              { name: 'Lina T.',   rating: 4, text: 'Great service, friendly staff.',                date: '2 weeks ago' },
-            ].map(r => (
-              <div key={r.name} className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-bold">
-                      {r.name[0]}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{r.name}</p>
-                      <p className="text-[10px] text-gray-400">{r.date}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-bold text-yellow-500">{'★'.repeat(r.rating)}</span>
-                </div>
-                <p className="text-sm text-gray-600 mt-2 leading-relaxed">{r.text}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
+          {query && (
+            <IconButton
+              size="small"
+              onClick={() => setQuery("")}
+            >
+              <Close
+                sx={{
+                  fontSize: 14,
+                }}
+              />
+            </IconButton>
+          )}
+        </div>
       </div>
-    </div>
-  )
-}
 
-export default Profile
+      {/* =========================================================
+          ACCOUNT TABLE
+      ========================================================= */}
+      <TableContainer
+        component={Paper}
+        elevation={0}
+        sx={{
+          borderRadius: "16px",
+          border: "1px solid rgba(18,24,31,0.06)",
+          overflow: "hidden",
+        }}
+      >
+        <Table
+          sx={{
+            minWidth: 900,
+          }}
+          aria-label="accounts table"
+        >
+          <TableHead>
+            <TableRow>
+              <StyledTableCell>
+                Account
+              </StyledTableCell>
+
+              <StyledTableCell>
+                Role
+              </StyledTableCell>
+
+              <StyledTableCell>
+                Registered via
+              </StyledTableCell>
+
+              <StyledTableCell>
+                Joined
+              </StyledTableCell>
+
+              <StyledTableCell align="center">
+                Status
+              </StyledTableCell>
+
+              <StyledTableCell align="center">
+                Action
+              </StyledTableCell>
+            </TableRow>
+          </TableHead>
+
+          <TableBody>
+            {filtered.length === 0 ? (
+              <TableRow>
+                <StyledTableCell
+                  colSpan={6}
+                  align="center"
+                  sx={{
+                    py: 6,
+                    color: "#8B93A0",
+                  }}
+                >
+                  No accounts match your filters
+                </StyledTableCell>
+              </TableRow>
+            ) : (
+              filtered.map((a) => {
+                const role = roleMeta[a.role];
+
+                const RoleIcon = role.icon;
+
+                const platform = platformMeta[a.platform];
+
+                const PlatformIcon = platform.icon;
+
+                const blocked = a.status === "blocked";
+
+                return (
+                  <StyledTableRow key={a.email}>
+                    {/* =================================================
+                        ACCOUNT
+                    ================================================= */}
+                    <StyledTableCell>
+                      <div className="flex items-center gap-2.5">
+                        <Avatar
+                          sx={{
+                            width: 34,
+                            height: 34,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            bgcolor: avatarColor(a.name),
+                          }}
+                        >
+                          {initials(a.name)}
+                        </Avatar>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p
+                              className="font-medium truncate"
+                              style={{
+                                color: "#12181F",
+                              }}
+                            >
+                              {a.name}
+                            </p>
+
+                            {a.role === "salon_owner" && (
+                              <Verified
+                                sx={{
+                                  fontSize: 14,
+                                  color: GREEN,
+                                }}
+                              />
+                            )}
+                          </div>
+
+                          <p
+                            className="text-xs truncate"
+                            style={{
+                              color: "#8B93A0",
+                            }}
+                          >
+                            {a.email}
+                          </p>
+                        </div>
+                      </div>
+                    </StyledTableCell>
+
+                    {/* =================================================
+                        ROLE
+                    ================================================= */}
+                    <StyledTableCell>
+                      <span
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+                        style={{
+                          backgroundColor: role.soft,
+                          color: role.color,
+                        }}
+                      >
+                        <RoleIcon
+                          sx={{
+                            fontSize: 13,
+                          }}
+                        />
+
+                        {role.label}
+                      </span>
+                    </StyledTableCell>
+
+                    {/* =================================================
+                        PLATFORM
+                    ================================================= */}
+                    <StyledTableCell>
+                      <div
+                        className="flex items-center gap-1.5"
+                        style={{
+                          color: "#6B6B6B",
+                        }}
+                      >
+                        <PlatformIcon
+                          sx={{
+                            fontSize: 15,
+                          }}
+                        />
+
+                        <span className="text-sm">
+                          {platform.label}
+                        </span>
+                      </div>
+                    </StyledTableCell>
+
+                    {/* =================================================
+                        JOINED
+                    ================================================= */}
+                    <StyledTableCell>
+                      <span
+                        style={{
+                          fontFamily: "'IBM Plex Mono', monospace",
+                          fontSize: 13,
+                          color: "#6B6B6B",
+                        }}
+                      >
+                        {a.joined}
+                      </span>
+                    </StyledTableCell>
+
+                    {/* =================================================
+                        STATUS
+                    ================================================= */}
+                    <StyledTableCell align="center">
+                      <span
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+                        style={{
+                          backgroundColor: blocked
+                            ? RED_SOFT
+                            : GREEN_SOFT,
+                          color: blocked ? RED : GREEN,
+                        }}
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{
+                            backgroundColor: blocked
+                              ? RED
+                              : GREEN,
+                          }}
+                        />
+
+                        {blocked ? "Blocked" : "Active"}
+                      </span>
+                    </StyledTableCell>
+
+                    {/* =================================================
+                        ACTIONS
+                    ================================================= */}
+                    <StyledTableCell align="center">
+                      <div className="flex items-center justify-center gap-2">
+
+                        {/* VIEW BUTTON */}
+                        <Tooltip title="View account">
+                          <button
+                            onClick={() =>
+                              handleViewAccount(a)
+                            }
+                            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg"
+                            style={{
+                              color: GREEN,
+                              backgroundColor: GREEN_SOFT,
+                              transition:
+                                "background-color 0.15s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                "rgba(21,128,61,0.18)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                GREEN_SOFT;
+                            }}
+                          >
+                            <Visibility
+                              sx={{
+                                fontSize: 14,
+                              }}
+                            />
+
+                            View
+                          </button>
+                        </Tooltip>
+
+                        {/* BLOCK / UNBLOCK BUTTON */}
+                        <Tooltip
+                          title={
+                            blocked
+                              ? "Unblock account"
+                              : "Block account"
+                          }
+                        >
+                          <button
+                            onClick={() =>
+                              toggleStatus(a.email)
+                            }
+                            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg"
+                            style={{
+                              color: blocked
+                                ? GREEN
+                                : RED,
+                              backgroundColor: blocked
+                                ? GREEN_SOFT
+                                : RED_SOFT,
+                              transition:
+                                "background-color 0.15s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                blocked
+                                  ? "rgba(21,128,61,0.18)"
+                                  : "rgba(196,105,90,0.18)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                blocked
+                                  ? GREEN_SOFT
+                                  : RED_SOFT;
+                            }}
+                          >
+                            {blocked ? (
+                              <>
+                                <CheckCircle
+                                  sx={{
+                                    fontSize: 14,
+                                  }}
+                                />
+
+                                Unblock
+                              </>
+                            ) : (
+                              <>
+                                <Block
+                                  sx={{
+                                    fontSize: 14,
+                                  }}
+                                />
+
+                                Block
+                              </>
+                            )}
+                          </button>
+                        </Tooltip>
+                      </div>
+                    </StyledTableCell>
+                  </StyledTableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* =========================================================
+          VIEW ACCOUNT DIALOG
+      ========================================================= */}
+      <ViewAccount
+        open={viewOpen}
+        account={selectedAccount}
+        onClose={handleCloseView}
+        onToggleStatus={toggleStatus}
+      />
+    </div>
+  );
+}

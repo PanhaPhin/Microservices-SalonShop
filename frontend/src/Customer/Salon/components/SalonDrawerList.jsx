@@ -12,6 +12,7 @@ import {
   Category,
   Notifications,
   Payments,
+  Settings,
 } from "@mui/icons-material";
 
 const menu = [
@@ -71,6 +72,13 @@ const menu2 = [
     path: "/salon-dashboard/account",
     icon: <AccountBox />,
     activeIcon: <AccountBox color="primary" />,
+  },
+
+   {
+    name: "Settings",
+    path: "/salon-dashboard/settings",
+    icon: <Settings />,
+    activeIcon: <Settings color="primary" />,
   },
   {
     name: "Logout",

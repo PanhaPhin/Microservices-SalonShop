@@ -28,6 +28,9 @@ const Navbar = () => {
 
   const open = Boolean(anchorEl);
 
+  // adjust this if your role field is named differently
+  const isSalonOwner = auth.user?.role === "SALON_OWNER";
+
   useEffect(() => {
     const jwt = localStorage.getItem("jwt");
 
@@ -66,13 +69,21 @@ const Navbar = () => {
         </h1>
 
         <Button onClick={() => navigate("/")}>Home</Button>
+
+        {isSalonOwner && (
+          <Button onClick={() => navigate("/salon-dashboard")}>
+            Salon Dashboard
+          </Button>
+        )}
       </div>
 
       {/* Right */}
       <div className="flex items-center gap-4">
-        <Button variant="outlined" onClick={() => navigate("/become-partner")}>
-          Become Partner
-        </Button>
+        {!isSalonOwner && (
+          <Button variant="outlined" onClick={() => navigate("/become-partner")}>
+            Become Partner
+          </Button>
+        )}
 
         <IconButton onClick={() => navigate("/notifications")}>
           <Badge badgeContent={5} color="primary">
@@ -108,6 +119,17 @@ const Navbar = () => {
               >
                 My Bookings
               </MenuItem>
+
+              {isSalonOwner && (
+                <MenuItem
+                  onClick={() => {
+                    navigate("/salon-dashboard");
+                    handleClose();
+                  }}
+                >
+                  Salon Dashboard
+                </MenuItem>
+              )}
 
               <MenuItem onClick={handleLogout}>Logout</MenuItem>
             </Menu>
