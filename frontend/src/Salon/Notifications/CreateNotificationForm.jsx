@@ -111,7 +111,7 @@ export default function Create() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate("/notifications/create")}
+              onClick={() => navigate("/salon-dashboard/notifications")}
               className="w-9 h-9 rounded-xl flex items-center justify-center border transition-all hover:bg-gray-50"
               style={{
                 backgroundColor: "#fff",

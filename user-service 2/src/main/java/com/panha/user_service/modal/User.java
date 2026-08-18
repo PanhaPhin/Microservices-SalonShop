@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.panha.user_service.domain.UserRole;
 
 import jakarta.persistence.Column;
@@ -20,7 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity 
+@Entity
 @Getter
 @Setter
 @NoArgsConstructor
@@ -49,13 +50,11 @@ public class User {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
- 
     private LocalDateTime updatedAt;
 
-    @NotBlank(message = "password is mandatory")
+    @JsonIgnore
     private String password;
 
     private String keycloakId;
-
 
 }

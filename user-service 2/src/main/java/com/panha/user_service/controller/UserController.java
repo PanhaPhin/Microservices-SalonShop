@@ -77,6 +77,11 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(id, user));
     }
 
+    //New code
+    
+
+
+
     @DeleteMapping("/api/users/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable Long id) throws Exception {
         userService.deleteUser(id);

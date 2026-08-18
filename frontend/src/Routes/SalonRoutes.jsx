@@ -13,6 +13,7 @@ import SalonDashboard from "../Seller/SalonDashboard";
 import ViewAccount from "../Salon/Profile/ViewAccount";
 import Notification from "../Salon/Notifications/Notification";
 import CreateNotificationForm from "../Salon/Notifications/CreateNotificationForm";
+import Setting from "../Salon/Setting/Setting";
 
 const SalonRoutes = () => {
   return (
@@ -27,6 +28,7 @@ const SalonRoutes = () => {
       <Route path="/add-notification" element={<CreateNotificationForm />} />
       <Route path="/salon-dashboard" element={<SalonDashboard />} />
       <Route path="/view-account" element={<ViewAccount />} />
+      <Route path="/setting" element={<Setting />} />
       <Route path="/payment" element={<Payment />} />
       <Route path="/account" element={<Profile />} />
     </Routes>

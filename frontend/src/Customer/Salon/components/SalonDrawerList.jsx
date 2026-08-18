@@ -76,7 +76,7 @@ const menu2 = [
 
    {
     name: "Settings",
-    path: "/salon-dashboard/settings",
+    path: "/salon-dashboard/setting",
     icon: <Settings />,
     activeIcon: <Settings color="primary" />,
   },

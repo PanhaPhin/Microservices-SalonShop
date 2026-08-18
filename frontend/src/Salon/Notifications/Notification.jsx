@@ -265,7 +265,7 @@ export default function Notification() {
                     {/* CREATE NOTIFICATION */}
                     <button
                         type="button"
-                        onClick={() => navigate("/create-notification")}
+                        onClick={() => navigate("/salon-dashboard/add-notification")}
                         className="inline-flex items-center justify-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl transition-all"
                         style={{
                             backgroundColor: GREEN,
