@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.panha.user_service.modal.User;
+import com.panha.user_service.payload.dto.StatusUpdateRequest;
 import com.panha.user_service.service.UserService;
 
 import jakarta.validation.Valid;
@@ -77,8 +79,14 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(id, user));
     }
 
-    //New code
-    
+    @PatchMapping("/api/users/{id}/status")
+    public ResponseEntity<User> updateStatus(
+            @PathVariable Long id,
+            @RequestBody @Valid StatusUpdateRequest req) throws Exception {
+        return ResponseEntity.ok(userService.updateBlockedStatus(id, req.getBlocked()));
+    }
+
+
 
 
 

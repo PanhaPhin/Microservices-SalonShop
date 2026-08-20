@@ -13,21 +13,48 @@ import {
   Notifications,
   Payments,
   Settings,
+  Business,
+  Logout,
+  CalendarMonth,
+  EventAvailable,
+  Group,
+  AccessTime,
+  People,
+  Reviews,
+  LocalOffer,
+  Assessment,
+  Inventory2,
 } from "@mui/icons-material";
 
 const menu = [
+
   {
     name: "Dashboard",
     path: "/salon-dashboard",
     icon: <Dashboard />,
     activeIcon: <Dashboard color="primary" />,
   },
+
   {
     name: "Bookings",
     path: "/salon-dashboard/booking",
     icon: <ShoppingBag />,
     activeIcon: <ShoppingBag color="primary" />,
   },
+  {
+    name: "Calendar",
+    path: "/salon-dashboard/calendar",
+    icon: <CalendarMonth />,
+    activeIcon: <CalendarMonth color="primary" />,
+  },
+  {
+    name: "Booking Requests",
+    path: "/salon-dashboard/booking-requests",
+    icon: <EventAvailable />,
+    activeIcon: <EventAvailable color="primary" />,
+  },
+
+ 
   {
     name: "Services",
     path: "/salon-dashboard/services",
@@ -41,6 +68,46 @@ const menu = [
     activeIcon: <Add color="primary" />,
   },
   {
+    name: "Category",
+    path: "/salon-dashboard/category",
+    icon: <Category />,
+    activeIcon: <Category color="primary" />,
+  },
+  {
+    name: "Packages",
+    path: "/salon-dashboard/packages",
+    icon: <Inventory2 />,
+    activeIcon: <Inventory2 color="primary" />,
+  },
+
+
+  {
+    name: "Branches",
+    path: "/salon-dashboard/branch",
+    icon: <Business />,
+    activeIcon: <Business color="primary" />,
+  },
+  {
+    name: "Staff",
+    path: "/salon-dashboard/staff",
+    icon: <Group />,
+    activeIcon: <Group color="primary" />,
+  },
+  {
+    name: "Working Hours",
+    path: "/salon-dashboard/working-hours",
+    icon: <AccessTime />,
+    activeIcon: <AccessTime color="primary" />,
+  },
+
+  {
+    name: "Customers",
+    path: "/salon-dashboard/customers",
+    icon: <People />,
+    activeIcon: <People color="primary" />,
+  },
+
+  {
     name: "Payment",
     path: "/salon-dashboard/payment",
     icon: <Payments />,
@@ -53,10 +120,24 @@ const menu = [
     activeIcon: <Receipt color="primary" />,
   },
   {
-    name: "Category",
-    path: "/salon-dashboard/category",
-    icon: <Category />,
-    activeIcon: <Category color="primary" />,
+    name: "Reports",
+    path: "/salon-dashboard/reports",
+    icon: <Assessment />,
+    activeIcon: <Assessment color="primary" />,
+  },
+
+
+  {
+    name: "Reviews",
+    path: "/salon-dashboard/reviews",
+    icon: <Reviews />,
+    activeIcon: <Reviews color="primary" />,
+  },
+  {
+    name: "Offers",
+    path: "/salon-dashboard/offers",
+    icon: <LocalOffer />,
+    activeIcon: <LocalOffer color="primary" />,
   },
   {
     name: "Notifications",
@@ -67,6 +148,7 @@ const menu = [
 ];
 
 const menu2 = [
+
   {
     name: "Account",
     path: "/salon-dashboard/account",
@@ -74,17 +156,19 @@ const menu2 = [
     activeIcon: <AccountBox color="primary" />,
   },
 
-   {
+  {
     name: "Settings",
     path: "/salon-dashboard/setting",
     icon: <Settings />,
     activeIcon: <Settings color="primary" />,
   },
+
+
   {
     name: "Logout",
     path: "/",
-    icon: <Receipt />,
-    activeIcon: <Receipt />,
+    icon: <Logout />,
+    activeIcon: <Logout />,
   },
 ];
 

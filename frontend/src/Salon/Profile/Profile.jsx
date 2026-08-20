@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { styled } from "@mui/material/styles";
+
 import {
   Table,
   TableBody,
@@ -13,6 +14,7 @@ import {
   IconButton,
   Tooltip,
   Avatar,
+  CircularProgress,
 } from "@mui/material";
 
 import {
@@ -20,16 +22,25 @@ import {
   Close,
   Storefront,
   Person,
+  AdminPanelSettings,
   Language,
-  PhoneIphone,
+  Apple,
+  Android,
   Block,
   CheckCircle,
   Groups,
   Verified,
   Visibility,
+  WarningAmber,
+  Refresh,
 } from "@mui/icons-material";
 
 import ViewAccount from "./ViewAccount";
+import api from "../../config/api";
+
+/* =========================================================
+   COLORS
+========================================================= */
 
 const GREEN = "#15803d";
 const GREEN_SOFT = "rgba(21,128,61,0.10)";
@@ -37,64 +48,15 @@ const GREEN_SOFT = "rgba(21,128,61,0.10)";
 const RED = "#C4695A";
 const RED_SOFT = "rgba(196,105,90,0.10)";
 
-const initialAccounts = [
-  {
-    name: "Nika Chan",
-    email: "nika@nikasalon.com",
-    role: "salon_owner",
-    platform: "web",
-    joined: "Jan 12, 2024",
-    status: "active",
-  },
-  {
-    name: "Sophea Khun",
-    email: "sophea.k@gmail.com",
-    role: "user",
-    platform: "app",
-    joined: "Mar 3, 2025",
-    status: "active",
-  },
-  {
-    name: "Dara Meas",
-    email: "dara.meas@gmail.com",
-    role: "user",
-    platform: "app",
-    joined: "Apr 18, 2025",
-    status: "active",
-  },
-  {
-    name: "Golden Scissors Salon",
-    email: "contact@goldenscissors.com",
-    role: "salon_owner",
-    platform: "web",
-    joined: "Jun 9, 2025",
-    status: "blocked",
-  },
-  {
-    name: "Lina Try",
-    email: "lina.try@gmail.com",
-    role: "user",
-    platform: "web",
-    joined: "Jul 22, 2025",
-    status: "active",
-  },
-  {
-    name: "Marcus Vann",
-    email: "marcus.v@gmail.com",
-    role: "user",
-    platform: "app",
-    joined: "Aug 2, 2025",
-    status: "blocked",
-  },
-  {
-    name: "Chan Pisey",
-    email: "pisey.chan@gmail.com",
-    role: "salon_owner",
-    platform: "app",
-    joined: "Aug 14, 2025",
-    status: "active",
-  },
-];
+const GRAY = "#5B6472";
+const GRAY_SOFT = "rgba(91,100,114,0.10)";
+
+const BLUE = "#2563EB";
+const BLUE_SOFT = "rgba(37,99,235,0.10)";
+
+/* =========================================================
+   ROLE
+========================================================= */
 
 const roleMeta = {
   salon_owner: {
@@ -107,10 +69,21 @@ const roleMeta = {
   user: {
     label: "User",
     icon: Person,
-    color: "#5B6472",
-    soft: "rgba(91,100,114,0.10)",
+    color: GRAY,
+    soft: GRAY_SOFT,
+  },
+
+  admin: {
+    label: "Admin",
+    icon: AdminPanelSettings,
+    color: BLUE,
+    soft: BLUE_SOFT,
   },
 };
+
+/* =========================================================
+   PLATFORM
+========================================================= */
 
 const platformMeta = {
   web: {
@@ -118,11 +91,20 @@ const platformMeta = {
     icon: Language,
   },
 
-  app: {
-    label: "App",
-    icon: PhoneIphone,
+  ios: {
+    label: "iOS",
+    icon: Apple,
+  },
+
+  android: {
+    label: "Android",
+    icon: Android,
   },
 };
+
+/* =========================================================
+   AVATAR
+========================================================= */
 
 const avatarPalette = [
   "#7C9885",
@@ -132,16 +114,169 @@ const avatarPalette = [
   "#15803d",
 ];
 
-const avatarColor = (name) =>
-  avatarPalette[name.charCodeAt(0) % avatarPalette.length];
+const avatarColor = (name = "?") => {
+  const firstChar = name.charCodeAt(0);
 
-const initials = (name) =>
+  return avatarPalette[
+    firstChar % avatarPalette.length
+  ];
+};
+
+const initials = (name = "?") =>
   name
-    .split(" ")
+    .trim()
+    .split(/\s+/)
     .map((n) => n[0])
     .slice(0, 2)
     .join("")
     .toUpperCase();
+
+/* =========================================================
+   DATE
+========================================================= */
+
+const formatDate = (value) => {
+  if (!value) {
+    return "—";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const formatDateTime = (value) => {
+  if (!value) {
+    return "Never";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+/* =========================================================
+   NORMALIZE ROLE
+   Backend:
+   SALON_OWNER
+   CUSTOMER
+   ADMIN
+
+   Frontend:
+   salon_owner
+   user
+   admin
+========================================================= */
+
+const normalizeRole = (role) => {
+  const value = String(role || "")
+    .trim()
+    .toUpperCase();
+
+  switch (value) {
+    case "SALON_OWNER":
+    case "ROLE_SALON_OWNER":
+      return "salon_owner";
+
+    case "CUSTOMER":
+    case "USER":
+    case "ROLE_CUSTOMER":
+    case "ROLE_USER":
+      return "user";
+
+    case "ADMIN":
+    case "ROLE_ADMIN":
+      return "admin";
+
+    default:
+      return "user";
+  }
+};
+
+/* =========================================================
+   NORMALIZE PLATFORM
+========================================================= */
+
+const normalizePlatform = (platform) => {
+  if (!platform) {
+    return null;
+  }
+
+  const value = String(platform)
+    .trim()
+    .toLowerCase();
+
+  if (platformMeta[value]) {
+    return value;
+  }
+
+  return null;
+};
+
+/* =========================================================
+   NORMALIZE BACKEND USER
+========================================================= */
+
+function normalizeAccount(raw = {}) {
+  return {
+    id: raw.id,
+
+    name:
+      raw.fullName?.trim() ||
+      raw.username?.trim() ||
+      "Unnamed",
+
+    username: raw.username || "—",
+
+    email: raw.email || "—",
+
+    phone: raw.phone || "—",
+
+    role: normalizeRole(raw.role),
+
+    platform: normalizePlatform(
+      raw.lastActivePlatform
+    ),
+
+    lastActiveAt: raw.lastActiveAt || null,
+
+    lastActiveAtFormatted: formatDateTime(
+      raw.lastActiveAt
+    ),
+
+    joined: formatDate(raw.createdAt),
+
+    createdAt: raw.createdAt || null,
+
+    updatedAt: raw.updatedAt || null,
+
+    keycloakId: raw.keycloakId || null,
+
+    blocked: Boolean(raw.blocked),
+  };
+}
+
+/* =========================================================
+   TABLE CELL
+========================================================= */
 
 const StyledTableCell = styled(TableCell)(() => ({
   [`&.${tableCellClasses.head}`]: {
@@ -153,26 +288,37 @@ const StyledTableCell = styled(TableCell)(() => ({
     textTransform: "uppercase",
     border: 0,
     padding: "14px 16px",
+    whiteSpace: "nowrap",
   },
 
   [`&.${tableCellClasses.body}`]: {
     fontSize: 14,
     padding: "12px 16px",
-    borderBottom: "1px solid rgba(18,24,31,0.06)",
+    borderBottom:
+      "1px solid rgba(18,24,31,0.06)",
   },
 }));
+
+/* =========================================================
+   TABLE ROW
+========================================================= */
 
 const StyledTableRow = styled(TableRow)(() => ({
   transition: "background-color 0.15s ease",
 
   "&:hover": {
-    backgroundColor: "rgba(21,128,61,0.04)",
+    backgroundColor:
+      "rgba(21,128,61,0.04)",
   },
 
   "&:last-child td, &:last-child th": {
     border: 0,
   },
 }));
+
+/* =========================================================
+   FILTERS
+========================================================= */
 
 const FILTERS = [
   {
@@ -188,106 +334,331 @@ const FILTERS = [
     label: "Users",
   },
   {
+    key: "admin",
+    label: "Admins",
+  },
+  {
     key: "blocked",
     label: "Blocked",
   },
 ];
 
+/* =========================================================
+   PROFILE
+========================================================= */
+
 export default function Profile() {
   const [query, setQuery] = useState("");
 
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] =
+    useState("all");
 
-  const [accounts, setAccounts] = useState(initialAccounts);
+  const [accounts, setAccounts] =
+    useState([]);
 
-  // Selected account for ViewAccount dialog
-  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [loading, setLoading] =
+    useState(true);
 
-  // ViewAccount dialog state
-  const [viewOpen, setViewOpen] = useState(false);
+  const [error, setError] =
+    useState(null);
 
-  /*
-   * Account statistics
-   */
+  const [selectedAccount, setSelectedAccount] =
+    useState(null);
+
+  const [viewOpen, setViewOpen] =
+    useState(false);
+
+  const [updatingId, setUpdatingId] =
+    useState(null);
+
+  /* =========================================================
+     LOAD ACCOUNTS
+  ========================================================= */
+
+  const loadAccounts = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log(
+        "GET:",
+        `${api.defaults.baseURL}/api/users`
+      );
+
+      const response =
+        await api.get("/api/users");
+
+      console.log(
+        "Spring Boot response:",
+        response.data
+      );
+
+      const data = Array.isArray(
+        response.data
+      )
+        ? response.data
+        : response.data?.content ||
+        response.data?.data ||
+        [];
+
+      const normalizedAccounts =
+        data.map(normalizeAccount);
+
+      setAccounts(normalizedAccounts);
+    } catch (err) {
+      console.error(
+        "Load accounts error:",
+        err
+      );
+
+      if (err.response?.status === 401) {
+        setError(
+          "Unauthorized. Your login session may have expired. Please login again."
+        );
+      } else if (
+        err.response?.status === 403
+      ) {
+        setError(
+          "Access denied. Only Salon Owners can view all accounts."
+        );
+      } else {
+        const message =
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          err.message ||
+          "Something went wrong loading accounts.";
+
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAccounts();
+  }, []);
+
   const counts = useMemo(
     () => ({
       total: accounts.length,
 
-      owners: accounts.filter((a) => a.role === "salon_owner").length,
+      owners: accounts.filter(
+        (account) =>
+          account.role === "salon_owner"
+      ).length,
 
-      users: accounts.filter((a) => a.role === "user").length,
+      users: accounts.filter(
+        (account) =>
+          account.role === "user"
+      ).length,
 
-      blocked: accounts.filter((a) => a.status === "blocked").length,
+      admins: accounts.filter(
+        (account) =>
+          account.role === "admin"
+      ).length,
+
+      blocked: accounts.filter(
+        (account) =>
+          account.blocked
+      ).length,
     }),
     [accounts]
   );
 
-  /*
-   * Filter + Search
-   */
   const filtered = useMemo(() => {
-    let list = accounts;
+    let list = [...accounts];
+
+    /* ROLE FILTER */
 
     if (filter === "salon_owner") {
-      list = list.filter((a) => a.role === "salon_owner");
-    } else if (filter === "user") {
-      list = list.filter((a) => a.role === "user");
-    } else if (filter === "blocked") {
-      list = list.filter((a) => a.status === "blocked");
+      list = list.filter(
+        (account) =>
+          account.role === "salon_owner"
+      );
     }
 
-    const q = query.trim().toLowerCase();
+    if (filter === "user") {
+      list = list.filter(
+        (account) =>
+          account.role === "user"
+      );
+    }
+
+    if (filter === "admin") {
+      list = list.filter(
+        (account) =>
+          account.role === "admin"
+      );
+    }
+
+    if (filter === "blocked") {
+      list = list.filter(
+        (account) =>
+          account.blocked
+      );
+    }
+
+    /* SEARCH */
+
+    const q = query
+      .trim()
+      .toLowerCase();
 
     if (q) {
       list = list.filter(
-        (a) =>
-          a.name.toLowerCase().includes(q) ||
-          a.email.toLowerCase().includes(q)
+        (account) => {
+          const name =
+            String(
+              account.name || ""
+            ).toLowerCase();
+
+          const username =
+            String(
+              account.username || ""
+            ).toLowerCase();
+
+          const email =
+            String(
+              account.email || ""
+            ).toLowerCase();
+
+          const phone =
+            String(
+              account.phone || ""
+            ).toLowerCase();
+
+          return (
+            name.includes(q) ||
+            username.includes(q) ||
+            email.includes(q) ||
+            phone.includes(q)
+          );
+        }
       );
     }
 
     return list;
-  }, [accounts, filter, query]);
+  }, [
+    accounts,
+    filter,
+    query,
+  ]);
 
-  /*
-   * Toggle Account Status
-   */
-  const toggleStatus = (email) => {
-    setAccounts((prev) =>
-      prev.map((a) =>
-        a.email === email
-          ? {
-              ...a,
-              status: a.status === "active" ? "blocked" : "active",
-            }
-          : a
-      )
-    );
+  const toggleStatus = async (id) => {
+    const target =
+      accounts.find(
+        (account) =>
+          account.id === id
+      );
 
-    // Update currently opened account
-    setSelectedAccount((prev) => {
-      if (!prev || prev.email !== email) {
-        return prev;
+    if (!target) {
+      return;
+    }
+
+    const nextBlocked =
+      !target.blocked;
+
+    setUpdatingId(id);
+
+    try {
+      console.log(
+        "PATCH:",
+        `${api.defaults.baseURL}/api/users/${id}/status`
+      );
+
+      console.log(
+        "Request body:",
+        {
+          blocked: nextBlocked,
+        }
+      );
+
+      const response =
+        await api.patch(
+          `/api/users/${id}/status`,
+          {
+            blocked: nextBlocked,
+          }
+        );
+
+      console.log(
+        "Spring Boot update response:",
+        response.data
+      );
+
+      /*
+       * Backend returns:
+       *
+       * ResponseEntity<User>
+       *
+       * Therefore response.data is
+       * the updated User.
+       */
+
+      const updatedAccount =
+        normalizeAccount(
+          response.data
+        );
+
+      setAccounts(
+        (previous) =>
+          previous.map(
+            (account) =>
+              account.id === id
+                ? updatedAccount
+                : account
+          )
+      );
+
+      setSelectedAccount(
+        (previous) =>
+          previous &&
+            previous.id === id
+            ? updatedAccount
+            : previous
+      );
+    } catch (err) {
+      console.error(
+        "Update account status error:",
+        err
+      );
+
+      if (err.response?.status === 401) {
+        alert(
+          "Unauthorized. Please login again."
+        );
+      } else if (
+        err.response?.status === 403
+      ) {
+        alert(
+          "Access denied. Only Salon Owners can update account status."
+        );
+      } else {
+        const message =
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          err.message ||
+          "Could not update account status.";
+
+        alert(message);
       }
-
-      return {
-        ...prev,
-        status: prev.status === "active" ? "blocked" : "active",
-      };
-    });
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
-  /*
-   * Open View Account
-   */
-  const handleViewAccount = (account) => {
+
+
+  const handleViewAccount = (
+    account
+  ) => {
     setSelectedAccount(account);
     setViewOpen(true);
   };
 
-  /*
-   * Close View Account
-   */
+
+
   const handleCloseView = () => {
     setViewOpen(false);
     setSelectedAccount(null);
@@ -298,12 +669,14 @@ export default function Profile() {
       className="min-h-screen w-full px-6 py-8 md:px-10 lg:px-14"
       style={{
         backgroundColor: "#F9FAFB",
-        fontFamily: "'Manrope', 'Inter', sans-serif",
+        fontFamily:
+          "'Manrope', 'Inter', sans-serif",
       }}
     >
-      {/* =========================================================
+      {/* =====================================================
           HEADER
-      ========================================================= */}
+      ===================================================== */}
+
       <div className="mb-6">
         <p
           className="text-xs uppercase tracking-[0.25em] mb-2"
@@ -317,7 +690,8 @@ export default function Profile() {
         <h1
           className="font-semibold text-2xl md:text-3xl"
           style={{
-            fontFamily: "'Fraunces', serif",
+            fontFamily:
+              "'Fraunces', serif",
             color: "#12181F",
           }}
         >
@@ -330,13 +704,53 @@ export default function Profile() {
             color: "#8B93A0",
           }}
         >
-          All salon owners and users registered via web or app.
+          Manage salon owners, users, and
+          administrators.
         </p>
       </div>
 
-      {/* =========================================================
+      {/* =====================================================
+          ERROR
+      ===================================================== */}
+
+      {error && (
+        <div
+          className="flex items-center gap-3 rounded-xl px-4 py-3 mb-6 text-sm"
+          style={{
+            backgroundColor:
+              RED_SOFT,
+            color: RED,
+          }}
+        >
+          <WarningAmber
+            sx={{
+              fontSize: 18,
+            }}
+          />
+
+          <span className="flex-1">
+            {error}
+          </span>
+
+          <button
+            onClick={loadAccounts}
+            className="flex items-center gap-1.5 font-semibold"
+          >
+            <Refresh
+              sx={{
+                fontSize: 16,
+              }}
+            />
+
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* =====================================================
           STAT CARDS
-      ========================================================= */}
+      ===================================================== */}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
           {
@@ -359,8 +773,8 @@ export default function Profile() {
             label: "Users",
             value: counts.users,
             icon: Person,
-            accent: "#5B6472",
-            soft: "rgba(91,100,114,0.10)",
+            accent: GRAY,
+            soft: GRAY_SOFT,
           },
 
           {
@@ -370,87 +784,118 @@ export default function Profile() {
             accent: RED,
             soft: RED_SOFT,
           },
-        ].map(({ label, value, icon: Icon, accent, soft }) => (
-          <div
-            key={label}
-            className="rounded-2xl p-5 border"
-            style={{
-              backgroundColor: "#fff",
-              borderColor: "rgba(18,24,31,0.06)",
-            }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div
-                className="w-9 h-9 rounded-full flex items-center justify-center"
+        ].map(
+          ({
+            label,
+            value,
+            icon: Icon,
+            accent,
+            soft,
+          }) => (
+            <div
+              key={label}
+              className="rounded-2xl p-5 border"
+              style={{
+                backgroundColor:
+                  "#fff",
+                borderColor:
+                  "rgba(18,24,31,0.06)",
+              }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center"
+                  style={{
+                    backgroundColor:
+                      soft,
+                  }}
+                >
+                  <Icon
+                    sx={{
+                      fontSize: 18,
+                      color: accent,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <p
+                className="text-2xl font-semibold"
                 style={{
-                  backgroundColor: soft,
+                  fontFamily:
+                    "'IBM Plex Mono', monospace",
+                  color: "#12181F",
                 }}
               >
-                <Icon
-                  sx={{
-                    fontSize: 18,
-                    color: accent,
-                  }}
-                />
-              </div>
+                {loading
+                  ? "—"
+                  : value}
+              </p>
+
+              <p
+                className="text-xs mt-1"
+                style={{
+                  color: "#8B93A0",
+                }}
+              >
+                {label}
+              </p>
             </div>
-
-            <p
-              className="text-2xl font-semibold"
-              style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                color: "#12181F",
-              }}
-            >
-              {value}
-            </p>
-
-            <p
-              className="text-xs mt-1"
-              style={{
-                color: "#8B93A0",
-              }}
-            >
-              {label}
-            </p>
-          </div>
-        ))}
+          )
+        )}
       </div>
 
-      {/* =========================================================
+      {/* =====================================================
           FILTER + SEARCH
-      ========================================================= */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
-        {/* Filters */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {FILTERS.map((f) => {
-            const active = filter === f.key;
+      ===================================================== */}
 
-            return (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className="text-xs font-semibold px-3.5 py-1.5 rounded-full transition-colors"
-                style={{
-                  backgroundColor: active ? GREEN : "#fff",
-                  color: active ? "#fff" : "#6B6B6B",
-                  border: `1px solid ${
-                    active ? GREEN : "rgba(18,24,31,0.10)"
-                  }`,
-                }}
-              >
-                {f.label}
-              </button>
-            );
-          })}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          {FILTERS.map(
+            (item) => {
+              const active =
+                filter ===
+                item.key;
+
+              return (
+                <button
+                  key={item.key}
+                  onClick={() =>
+                    setFilter(
+                      item.key
+                    )
+                  }
+                  className="text-xs font-semibold px-3.5 py-1.5 rounded-full transition-colors"
+                  style={{
+                    backgroundColor:
+                      active
+                        ? GREEN
+                        : "#fff",
+
+                    color: active
+                      ? "#fff"
+                      : "#6B6B6B",
+
+                    border: `1px solid ${active
+                        ? GREEN
+                        : "rgba(18,24,31,0.10)"
+                      }`,
+                  }}
+                >
+                  {item.label}
+                </button>
+              );
+            }
+          )}
         </div>
 
-        {/* Search */}
         <div
-          className="flex items-center gap-2 rounded-xl px-3 py-2 border w-full md:w-72"
+          className="flex items-center gap-2 rounded-xl px-3 py-2 border w-full md:w-80"
           style={{
-            backgroundColor: "#fff",
-            borderColor: "rgba(18,24,31,0.08)",
+            backgroundColor:
+              "#fff",
+            borderColor:
+              "rgba(18,24,31,0.08)",
           }}
         >
           <Search
@@ -461,9 +906,16 @@ export default function Profile() {
           />
 
           <InputBase
-            placeholder="Search by name or email…"
+            placeholder="Search name, username, email or phone…"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(
+              event
+            ) =>
+              setQuery(
+                event.target
+                  .value
+              )
+            }
             sx={{
               fontSize: 14,
               flex: 1,
@@ -473,7 +925,9 @@ export default function Profile() {
           {query && (
             <IconButton
               size="small"
-              onClick={() => setQuery("")}
+              onClick={() =>
+                setQuery("")
+              }
             >
               <Close
                 sx={{
@@ -485,21 +939,24 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* =========================================================
+      {/* =====================================================
           ACCOUNT TABLE
-      ========================================================= */}
+      ===================================================== */}
+
       <TableContainer
         component={Paper}
         elevation={0}
         sx={{
-          borderRadius: "16px",
-          border: "1px solid rgba(18,24,31,0.06)",
+          borderRadius:
+            "16px",
+          border:
+            "1px solid rgba(18,24,31,0.06)",
           overflow: "hidden",
         }}
       >
         <Table
           sx={{
-            minWidth: 900,
+            minWidth: 950,
           }}
           aria-label="accounts table"
         >
@@ -514,7 +971,7 @@ export default function Profile() {
               </StyledTableCell>
 
               <StyledTableCell>
-                Registered via
+                Last Active Via
               </StyledTableCell>
 
               <StyledTableCell>
@@ -532,282 +989,471 @@ export default function Profile() {
           </TableHead>
 
           <TableBody>
-            {filtered.length === 0 ? (
+            {/* =================================================
+                LOADING
+            ================================================= */}
+
+            {loading ? (
               <TableRow>
                 <StyledTableCell
                   colSpan={6}
                   align="center"
                   sx={{
                     py: 6,
-                    color: "#8B93A0",
                   }}
                 >
-                  No accounts match your filters
+                  <CircularProgress
+                    size={22}
+                    sx={{
+                      color: GREEN,
+                    }}
+                  />
+                </StyledTableCell>
+              </TableRow>
+            ) : filtered.length ===
+              0 ? (
+              /* ===============================================
+                 EMPTY
+              =============================================== */
+
+              <TableRow>
+                <StyledTableCell
+                  colSpan={6}
+                  align="center"
+                  sx={{
+                    py: 6,
+                  }}
+                >
+                  <div className="flex flex-col items-center">
+                    <Groups
+                      sx={{
+                        fontSize: 38,
+                        color:
+                          "#CBD5E1",
+                        mb: 1,
+                      }}
+                    />
+
+                    <p
+                      className="text-sm font-medium"
+                      style={{
+                        color:
+                          "#6B7280",
+                      }}
+                    >
+                      No accounts found
+                    </p>
+
+                    <p
+                      className="text-xs mt-1"
+                      style={{
+                        color:
+                          "#9CA3AF",
+                      }}
+                    >
+                      Try changing your
+                      filter or search.
+                    </p>
+                  </div>
                 </StyledTableCell>
               </TableRow>
             ) : (
-              filtered.map((a) => {
-                const role = roleMeta[a.role];
+              /* ===============================================
+                 DATA
+              =============================================== */
 
-                const RoleIcon = role.icon;
+              filtered.map(
+                (account) => {
+                  const role =
+                    roleMeta[
+                    account.role
+                    ] ||
+                    roleMeta.user;
 
-                const platform = platformMeta[a.platform];
+                  const RoleIcon =
+                    role.icon;
 
-                const PlatformIcon = platform.icon;
+                  const platform =
+                    account.platform
+                      ? platformMeta[
+                      account
+                        .platform
+                      ]
+                      : null;
 
-                const blocked = a.status === "blocked";
+                  const PlatformIcon =
+                    platform?.icon;
 
-                return (
-                  <StyledTableRow key={a.email}>
-                    {/* =================================================
-                        ACCOUNT
-                    ================================================= */}
-                    <StyledTableCell>
-                      <div className="flex items-center gap-2.5">
-                        <Avatar
-                          sx={{
-                            width: 34,
-                            height: 34,
-                            fontSize: 12,
-                            fontWeight: 600,
-                            bgcolor: avatarColor(a.name),
-                          }}
-                        >
-                          {initials(a.name)}
-                        </Avatar>
+                  const blocked =
+                    account.blocked;
 
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
+                  const isUpdating =
+                    updatingId ===
+                    account.id;
+
+                  return (
+                    <StyledTableRow
+                      key={
+                        account.id
+                      }
+                    >
+                      {/* =========================================
+                          ACCOUNT
+                      ========================================= */}
+
+                      <StyledTableCell>
+                        <div className="flex items-center gap-2.5">
+                          <Avatar
+                            sx={{
+                              width: 34,
+                              height: 34,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              bgcolor:
+                                avatarColor(
+                                  account.name
+                                ),
+                            }}
+                          >
+                            {initials(
+                              account.name
+                            )}
+                          </Avatar>
+
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p
+                                className="font-medium truncate"
+                                style={{
+                                  color:
+                                    "#12181F",
+                                }}
+                              >
+                                {
+                                  account.name
+                                }
+                              </p>
+
+                              {account.role ===
+                                "salon_owner" && (
+                                  <Tooltip title="Verified Salon Owner">
+                                    <Verified
+                                      sx={{
+                                        fontSize: 15,
+                                        color:
+                                          GREEN,
+                                      }}
+                                    />
+                                  </Tooltip>
+                                )}
+                            </div>
+
                             <p
-                              className="font-medium truncate"
+                              className="text-xs truncate"
                               style={{
-                                color: "#12181F",
+                                color:
+                                  "#8B93A0",
                               }}
                             >
-                              {a.name}
+                              {
+                                account.email
+                              }
                             </p>
 
-                            {a.role === "salon_owner" && (
-                              <Verified
+                            {account.username !==
+                              "—" && (
+                                <p
+                                  className="text-[11px] truncate"
+                                  style={{
+                                    color:
+                                      "#A1A8B3",
+                                  }}
+                                >
+                                  @
+                                  {
+                                    account.username
+                                  }
+                                </p>
+                              )}
+                          </div>
+                        </div>
+                      </StyledTableCell>
+
+                      {/* =========================================
+                          ROLE
+                      ========================================= */}
+
+                      <StyledTableCell>
+                        <span
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+                          style={{
+                            backgroundColor:
+                              role.soft,
+                            color:
+                              role.color,
+                          }}
+                        >
+                          <RoleIcon
+                            sx={{
+                              fontSize: 13,
+                            }}
+                          />
+
+                          {
+                            role.label
+                          }
+                        </span>
+                      </StyledTableCell>
+
+                      {/* =========================================
+                          PLATFORM
+                      ========================================= */}
+
+                      <StyledTableCell>
+                        {platform ? (
+                          <Tooltip
+                            title={
+                              account.lastActiveAt
+                                ? `Last active: ${formatDateTime(
+                                  account.lastActiveAt
+                                )}`
+                                : "Last active platform"
+                            }
+                          >
+                            <div
+                              className="flex items-center gap-1.5 cursor-default"
+                              style={{
+                                color:
+                                  "#6B6B6B",
+                              }}
+                            >
+                              <PlatformIcon
                                 sx={{
-                                  fontSize: 14,
-                                  color: GREEN,
+                                  fontSize: 15,
                                 }}
                               />
-                            )}
-                          </div>
 
-                          <p
-                            className="text-xs truncate"
+                              <span className="text-sm">
+                                {
+                                  platform.label
+                                }
+                              </span>
+                            </div>
+                          </Tooltip>
+                        ) : (
+                          <span
+                            className="text-sm"
                             style={{
-                              color: "#8B93A0",
+                              color:
+                                "#8B93A0",
                             }}
                           >
-                            {a.email}
-                          </p>
-                        </div>
-                      </div>
-                    </StyledTableCell>
+                            Never logged in
+                          </span>
+                        )}
+                      </StyledTableCell>
 
-                    {/* =================================================
-                        ROLE
-                    ================================================= */}
-                    <StyledTableCell>
-                      <span
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
-                        style={{
-                          backgroundColor: role.soft,
-                          color: role.color,
-                        }}
-                      >
-                        <RoleIcon
-                          sx={{
-                            fontSize: 13,
-                          }}
-                        />
+                      {/* =========================================
+                          JOINED
+                      ========================================= */}
 
-                        {role.label}
-                      </span>
-                    </StyledTableCell>
-
-                    {/* =================================================
-                        PLATFORM
-                    ================================================= */}
-                    <StyledTableCell>
-                      <div
-                        className="flex items-center gap-1.5"
-                        style={{
-                          color: "#6B6B6B",
-                        }}
-                      >
-                        <PlatformIcon
-                          sx={{
-                            fontSize: 15,
-                          }}
-                        />
-
-                        <span className="text-sm">
-                          {platform.label}
-                        </span>
-                      </div>
-                    </StyledTableCell>
-
-                    {/* =================================================
-                        JOINED
-                    ================================================= */}
-                    <StyledTableCell>
-                      <span
-                        style={{
-                          fontFamily: "'IBM Plex Mono', monospace",
-                          fontSize: 13,
-                          color: "#6B6B6B",
-                        }}
-                      >
-                        {a.joined}
-                      </span>
-                    </StyledTableCell>
-
-                    {/* =================================================
-                        STATUS
-                    ================================================= */}
-                    <StyledTableCell align="center">
-                      <span
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
-                        style={{
-                          backgroundColor: blocked
-                            ? RED_SOFT
-                            : GREEN_SOFT,
-                          color: blocked ? RED : GREEN,
-                        }}
-                      >
+                      <StyledTableCell>
                         <span
-                          className="w-1.5 h-1.5 rounded-full"
                           style={{
-                            backgroundColor: blocked
-                              ? RED
-                              : GREEN,
+                            fontFamily:
+                              "'IBM Plex Mono', monospace",
+                            fontSize: 13,
+                            color:
+                              "#6B6B6B",
                           }}
-                        />
-
-                        {blocked ? "Blocked" : "Active"}
-                      </span>
-                    </StyledTableCell>
-
-                    {/* =================================================
-                        ACTIONS
-                    ================================================= */}
-                    <StyledTableCell align="center">
-                      <div className="flex items-center justify-center gap-2">
-
-                        {/* VIEW BUTTON */}
-                        <Tooltip title="View account">
-                          <button
-                            onClick={() =>
-                              handleViewAccount(a)
-                            }
-                            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg"
-                            style={{
-                              color: GREEN,
-                              backgroundColor: GREEN_SOFT,
-                              transition:
-                                "background-color 0.15s ease",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor =
-                                "rgba(21,128,61,0.18)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor =
-                                GREEN_SOFT;
-                            }}
-                          >
-                            <Visibility
-                              sx={{
-                                fontSize: 14,
-                              }}
-                            />
-
-                            View
-                          </button>
-                        </Tooltip>
-
-                        {/* BLOCK / UNBLOCK BUTTON */}
-                        <Tooltip
-                          title={
-                            blocked
-                              ? "Unblock account"
-                              : "Block account"
-                          }
                         >
-                          <button
-                            onClick={() =>
-                              toggleStatus(a.email)
-                            }
-                            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg"
+                          {
+                            account.joined
+                          }
+                        </span>
+                      </StyledTableCell>
+
+                      {/* =========================================
+                          STATUS
+                      ========================================= */}
+
+                      <StyledTableCell align="center">
+                        <span
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+                          style={{
+                            backgroundColor:
+                              blocked
+                                ? RED_SOFT
+                                : GREEN_SOFT,
+
+                            color:
+                              blocked
+                                ? RED
+                                : GREEN,
+                          }}
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
                             style={{
-                              color: blocked
-                                ? GREEN
-                                : RED,
-                              backgroundColor: blocked
-                                ? GREEN_SOFT
-                                : RED_SOFT,
-                              transition:
-                                "background-color 0.15s ease",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor =
+                              backgroundColor:
                                 blocked
-                                  ? "rgba(21,128,61,0.18)"
-                                  : "rgba(196,105,90,0.18)";
+                                  ? RED
+                                  : GREEN,
                             }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor =
-                                blocked
-                                  ? GREEN_SOFT
-                                  : RED_SOFT;
-                            }}
+                          />
+
+                          {blocked
+                            ? "Blocked"
+                            : "Active"}
+                        </span>
+                      </StyledTableCell>
+
+                      {/* =========================================
+                          ACTION
+                      ========================================= */}
+
+                      <StyledTableCell align="center">
+                        <div className="flex items-center justify-center gap-2">
+                          {/* VIEW */}
+
+                          <Tooltip title="View account">
+                            <button
+                              onClick={() =>
+                                handleViewAccount(
+                                  account
+                                )
+                              }
+                              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg"
+                              style={{
+                                color:
+                                  GREEN,
+                                backgroundColor:
+                                  GREEN_SOFT,
+                                transition:
+                                  "background-color 0.15s ease",
+                              }}
+                              onMouseEnter={(
+                                event
+                              ) => {
+                                event.currentTarget.style.backgroundColor =
+                                  "rgba(21,128,61,0.18)";
+                              }}
+                              onMouseLeave={(
+                                event
+                              ) => {
+                                event.currentTarget.style.backgroundColor =
+                                  GREEN_SOFT;
+                              }}
+                            >
+                              <Visibility
+                                sx={{
+                                  fontSize: 14,
+                                }}
+                              />
+
+                              View
+                            </button>
+                          </Tooltip>
+
+                          {/* BLOCK / UNBLOCK */}
+
+                          <Tooltip
+                            title={
+                              blocked
+                                ? "Unblock account"
+                                : "Block account"
+                            }
                           >
-                            {blocked ? (
-                              <>
-                                <CheckCircle
+                            <button
+                              onClick={() =>
+                                toggleStatus(
+                                  account.id
+                                )
+                              }
+                              disabled={
+                                isUpdating
+                              }
+                              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg"
+                              style={{
+                                color:
+                                  blocked
+                                    ? GREEN
+                                    : RED,
+
+                                backgroundColor:
+                                  blocked
+                                    ? GREEN_SOFT
+                                    : RED_SOFT,
+
+                                opacity:
+                                  isUpdating
+                                    ? 0.6
+                                    : 1,
+
+                                cursor:
+                                  isUpdating
+                                    ? "not-allowed"
+                                    : "pointer",
+
+                                transition:
+                                  "background-color 0.15s ease",
+                              }}
+                            >
+                              {isUpdating ? (
+                                <CircularProgress
+                                  size={12}
                                   sx={{
-                                    fontSize: 14,
+                                    color:
+                                      "inherit",
                                   }}
                                 />
+                              ) : blocked ? (
+                                <>
+                                  <CheckCircle
+                                    sx={{
+                                      fontSize: 14,
+                                    }}
+                                  />
 
-                                Unblock
-                              </>
-                            ) : (
-                              <>
-                                <Block
-                                  sx={{
-                                    fontSize: 14,
-                                  }}
-                                />
+                                  Unblock
+                                </>
+                              ) : (
+                                <>
+                                  <Block
+                                    sx={{
+                                      fontSize: 14,
+                                    }}
+                                  />
 
-                                Block
-                              </>
-                            )}
-                          </button>
-                        </Tooltip>
-                      </div>
-                    </StyledTableCell>
-                  </StyledTableRow>
-                );
-              })
+                                  Block
+                                </>
+                              )}
+                            </button>
+                          </Tooltip>
+                        </div>
+                      </StyledTableCell>
+                    </StyledTableRow>
+                  );
+                }
+              )
             )}
           </TableBody>
         </Table>
       </TableContainer>
 
-      {/* =========================================================
-          VIEW ACCOUNT DIALOG
-      ========================================================= */}
+      {/* =====================================================
+          VIEW ACCOUNT MODAL
+      ===================================================== */}
+
       <ViewAccount
         open={viewOpen}
         account={selectedAccount}
-        onClose={handleCloseView}
-        onToggleStatus={toggleStatus}
+        onClose={
+          handleCloseView
+        }
+        onToggleStatus={
+          toggleStatus
+        }
       />
     </div>
   );

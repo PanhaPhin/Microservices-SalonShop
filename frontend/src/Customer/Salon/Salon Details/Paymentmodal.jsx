@@ -12,46 +12,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 
-/**
- * PaymentModal
- *
- * Three ways to pay: scan a KHQR code, deep-link into a bank app,
- * or pay by card via Stripe.
- *
- * -------------------------------------------------------------
- * IMPORTANT — placeholder data:
- * `khqrString` and the deep links below are NOT real payment
- * data. A real KHQR string must come from your Bakong merchant
- * account (or your acquiring bank) and is normally generated
- * server-side per-transaction, because it encodes:
- *   - merchant ID / account
- *   - amount
- *   - currency
- *   - a transaction reference (so you can verify payment status)
- *
- * Stripe also needs a backend: you create a PaymentIntent
- * server-side and pass its `clientSecret` down as a prop —
- * the frontend can never hold your Stripe secret key.
- *
- * Once you have a backend endpoint, replace `khqrString`,
- * `deepLinks`, and `clientSecret` with real values, e.g.:
- *
- *   <PaymentModal
- *     open={paymentOpen}
- *     onClose={...}
- *     amount={totalPrice}
- *     khqrString={paymentData.khqrString}
- *     deepLinks={paymentData.deepLinks}
- *     clientSecret={paymentData.stripeClientSecret}
- *     stripePublishableKey={import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY}
- *     onConfirmed={...}
- *   />
- * -------------------------------------------------------------
- */
 
-// Placeholder badges (bank initials) instead of real trademarked
-// logos — swap `logo: null` for a real <img src="..."> asset once
-// you have licensed logo files from each bank's brand/media kit.
 const DEFAULT_DEEP_LINKS = [
   { name: "Bakong", scheme: "bakong://pay?qr=", initials: "BK", color: "#0B3D91" },
   { name: "ABA Mobile", scheme: "abamobile://pay?qr=", initials: "ABA", color: "#E4032E" },
@@ -60,10 +21,7 @@ const DEFAULT_DEEP_LINKS = [
   { name: "Vattanac Bank", scheme: "vattanacbank://pay?qr=", initials: "VB", color: "#7A1F2B" },
 ];
 
-// TODO: replace with your real Stripe publishable key (safe to
-// expose client-side — it's the *secret* key that must never
-// leave your backend). Best kept in an env var, e.g.
-// import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+
 const DEFAULT_STRIPE_PUBLISHABLE_KEY = "pk_test_MOCK_REPLACE_ME";
 
 const BankLogoBadge = ({ initials, color }) => (

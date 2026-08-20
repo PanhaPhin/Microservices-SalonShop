@@ -15,6 +15,7 @@ import Notification from "../Salon/Notifications/Notification";
 import CreateNotificationForm from "../Salon/Notifications/CreateNotificationForm";
 import Setting from "../Salon/Setting/Setting";
 
+
 const SalonRoutes = () => {
   return (
     <Routes>
@@ -31,6 +32,7 @@ const SalonRoutes = () => {
       <Route path="/setting" element={<Setting />} />
       <Route path="/payment" element={<Payment />} />
       <Route path="/account" element={<Profile />} />
+
     </Routes>
   );
 };

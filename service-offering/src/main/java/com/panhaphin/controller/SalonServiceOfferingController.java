@@ -1,6 +1,9 @@
 package com.panhaphin.controller;
 
+import java.util.Set;
+
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -27,6 +30,22 @@ public class SalonServiceOfferingController {
     private final ServiceOfferingService serviceOfferingService;
     private final SalonFeignClient salonFeignClient;
     private final CategoryFeignClient categoryFeignClient;
+
+    @GetMapping
+    public ResponseEntity<Set<ServiceOffering>> getMyServices(
+            @RequestHeader("Authorization") String jwt
+    ) throws Exception {
+
+        SalonDTO salonDTO
+                = salonFeignClient.getSalonByOwnerId(jwt).getBody();
+
+        return ResponseEntity.ok(
+                serviceOfferingService.getAllServiceBySalonId(
+                        salonDTO.getId(),
+                        null
+                )
+        );
+    }
 
     @PostMapping
     public ResponseEntity<ServiceOffering> createService(

@@ -4,35 +4,55 @@ import {
   Close,
   Storefront,
   Person,
+  AdminPanelSettings,
   Language,
-  PhoneIphone,
+  Apple,
+  Android,
   Block,
   CheckCircle,
   Verified,
   Email,
+  Phone,
   CalendarMonth,
   Badge,
+  AccessTime,
 } from "@mui/icons-material";
 
 const GREEN = "#15803d";
 const GREEN_SOFT = "rgba(21,128,61,0.10)";
 const RED = "#C4695A";
 const RED_SOFT = "rgba(196,105,90,0.10)";
+const GRAY = "#5B6472";
+const GRAY_SOFT = "rgba(91,100,114,0.10)";
+const BLUE = "#2563EB";
+const BLUE_SOFT = "rgba(37,99,235,0.10)";
 
 const roleMeta = {
   salon_owner: { label: "Salon Owner", icon: Storefront, color: GREEN, soft: GREEN_SOFT },
-  user: { label: "User", icon: Person, color: "#5B6472", soft: "rgba(91,100,114,0.10)" },
+  user: { label: "User", icon: Person, color: GRAY, soft: GRAY_SOFT },
+  admin: { label: "Admin", icon: AdminPanelSettings, color: BLUE, soft: BLUE_SOFT },
 };
+
+
 
 const platformMeta = {
   web: { label: "Web", icon: Language },
-  app: { label: "App", icon: PhoneIphone },
+  ios: { label: "iOS", icon: Apple },
+  android: { label: "Android", icon: Android },
 };
 
 const avatarPalette = ["#7C9885", "#C9A227", "#E8927C", "#8B93A0", "#15803d"];
-const avatarColor = (name) => avatarPalette[name.charCodeAt(0) % avatarPalette.length];
-const initials = (name) =>
-  name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
+
+const avatarColor = (name = "?") => avatarPalette[name.charCodeAt(0) % avatarPalette.length];
+
+const initials = (name = "?") =>
+  name
+    .trim()
+    .split(/\s+/)
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
 const InfoRow = ({ icon: Icon, label, value }) => (
   <div className="flex items-center gap-3 py-3" style={{ borderBottom: "1px solid rgba(18,24,31,0.06)" }}>
@@ -53,14 +73,17 @@ const InfoRow = ({ icon: Icon, label, value }) => (
   </div>
 );
 
-export default function ViewAccount({ open, account, onClose, onToggleStatus }) {
+export default function ViewAccount({ open, account, onClose, onToggleStatus, updatingId }) {
   if (!account) return null;
 
-  const role = roleMeta[account.role];
+  const role = roleMeta[account.role] || roleMeta.user;
   const RoleIcon = role.icon;
-  const platform = platformMeta[account.platform];
-  const PlatformIcon = platform.icon;
-  const blocked = account.status === "blocked";
+
+  const platform = account.platform ? platformMeta[account.platform] : null;
+  const PlatformIcon = platform?.icon;
+
+  const blocked = Boolean(account.blocked);
+  const isUpdating = updatingId === account.id;
 
   return (
     <Dialog
@@ -109,6 +132,11 @@ export default function ViewAccount({ open, account, onClose, onToggleStatus }) 
             <p className="text-sm truncate" style={{ color: "#8B93A0" }}>
               {account.email}
             </p>
+            {account.username !== "—" && (
+              <p className="text-xs truncate" style={{ color: "#A1A8B3" }}>
+                @{account.username}
+              </p>
+            )}
           </div>
         </div>
 
@@ -133,37 +161,52 @@ export default function ViewAccount({ open, account, onClose, onToggleStatus }) 
         {/* info list */}
         <div className="mb-6">
           <InfoRow icon={Email} label="Email address" value={account.email} />
-          <InfoRow icon={PlatformIcon} label="Registered via" value={platform.label} />
+          <InfoRow icon={Phone} label="Phone" value={account.phone} />
+          {platform ? (
+            <InfoRow icon={PlatformIcon} label="Last active via" value={platform.label} />
+          ) : (
+            <InfoRow icon={Language} label="Last active via" value="Never logged in" />
+          )}
+          <InfoRow icon={AccessTime} label="Last active" value={account.lastActiveAtFormatted || "Never"} />
           <InfoRow icon={CalendarMonth} label="Joined" value={account.joined} />
-          <InfoRow icon={Badge} label="Account ID" value={account.email.split("@")[0].toUpperCase()} />
+          <InfoRow icon={Badge} label="Account ID" value={account.id ?? "—"} />
         </div>
 
         {/* action */}
         <Tooltip title={blocked ? "Unblock this account" : "Block this account"}>
-          <button
-            onClick={() => onToggleStatus(account.email)}
-            className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-2.5 rounded-xl transition-colors"
-            style={{
-              color: blocked ? "#fff" : "#fff",
-              backgroundColor: blocked ? GREEN : RED,
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = blocked ? "#106b32" : "#b25749")
-            }
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = blocked ? GREEN : RED)}
-          >
-            {blocked ? (
-              <>
-                <CheckCircle sx={{ fontSize: 16 }} />
-                Unblock Account
-              </>
-            ) : (
-              <>
-                <Block sx={{ fontSize: 16 }} />
-                Block Account
-              </>
-            )}
-          </button>
+          <span>
+            <button
+              onClick={() => onToggleStatus(account.id)}
+              disabled={isUpdating}
+              className="w-full flex items-center justify-center gap-2 text-sm font-semibold py-2.5 rounded-xl transition-colors"
+              style={{
+                color: "#fff",
+                backgroundColor: blocked ? GREEN : RED,
+                opacity: isUpdating ? 0.6 : 1,
+                cursor: isUpdating ? "not-allowed" : "pointer",
+              }}
+              onMouseEnter={(e) => {
+                if (!isUpdating) {
+                  e.currentTarget.style.backgroundColor = blocked ? "#106b32" : "#b25749";
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = blocked ? GREEN : RED;
+              }}
+            >
+              {blocked ? (
+                <>
+                  <CheckCircle sx={{ fontSize: 16 }} />
+                  Unblock Account
+                </>
+              ) : (
+                <>
+                  <Block sx={{ fontSize: 16 }} />
+                  Block Account
+                </>
+              )}
+            </button>
+          </span>
         </Tooltip>
       </div>
     </Dialog>

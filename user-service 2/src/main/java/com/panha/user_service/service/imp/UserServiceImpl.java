@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.panha.user_service.domain.Platform;
 import com.panha.user_service.exception.UserException;
 import com.panha.user_service.modal.User;
 import com.panha.user_service.repository.UserRepository;
@@ -90,7 +91,22 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User updateBlockedStatus(Long id, boolean blocked) throws UserException {
+        User existingUser = getUserById(id);
+        existingUser.setBlocked(blocked);
+        return userRepository.save(existingUser);
+    }
+
+    @Override
     public List<User> getUsersByIds(List<Long> ids) {
         return userRepository.findAllById(ids);
+    }
+
+    @Override
+    public User recordActivity(Long id, Platform platform) throws UserException, Exception {
+        User user = getUserById(id);
+        user.setLastActivePlatform(platform);
+        user.setLastActiveAt(java.time.LocalDateTime.now());
+        return userRepository.save(user);
     }
 }

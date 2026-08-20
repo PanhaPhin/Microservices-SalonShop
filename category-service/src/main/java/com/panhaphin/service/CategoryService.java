@@ -2,12 +2,24 @@ package com.panhaphin.service;
 
 import java.util.Set;
 
-import com.panhaphin.modal.Category;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.panhaphin.dto.SalonDTO;
+import com.panhaphin.modal.Category;
 
 public interface CategoryService {
 
-    Category saveCategory(Category category, SalonDTO salonDTO);
+    Category saveCategory(
+            Category category,
+            MultipartFile image,
+            SalonDTO salonDTO
+    );
+
+    Category updateCategory(
+            Long id,
+            Category category,
+            Long salonId
+    ) throws Exception;
 
     Set<Category> getAllCategoriesBySalon(Long id);
 

@@ -27,9 +27,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginDTO req) {
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginDTO req) throws Exception {
         return ResponseEntity.ok(
-                authService.authenticate(req.getEmail(), req.getPassword())
+                authService.authenticate(req.getEmail(), req.getPassword(), req.getPlatform())
         );
     }
 
@@ -42,4 +42,5 @@ public class AuthController {
                 authService.getAccessTokenFromRefreshToken(req.getRefreshToken())
         );
     }
+
 }

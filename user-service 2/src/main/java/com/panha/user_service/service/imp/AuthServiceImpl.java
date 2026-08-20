@@ -21,7 +21,7 @@ public class AuthServiceImpl implements AuthService {
     private final KeycloakService keycloakService;
 
     @Override
-    public AuthResponse authenticate(String username, String password) {
+    public AuthResponse authenticate(String username, String password, String platform)  {
 
         TokenResponse tokenResponse = keycloakService.loginUser(username, password);
 

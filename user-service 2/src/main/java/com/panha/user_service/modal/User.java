@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.panha.user_service.domain.Platform;
 import com.panha.user_service.domain.UserRole;
 
 import jakarta.persistence.Column;
@@ -56,5 +57,13 @@ public class User {
     private String password;
 
     private String keycloakId;
+
+    @Enumerated(EnumType.STRING)
+    private Platform lastActivePlatform;
+
+    private LocalDateTime lastActiveAt;
+
+    @Column(nullable = false)
+    private boolean blocked = false;
 
 }

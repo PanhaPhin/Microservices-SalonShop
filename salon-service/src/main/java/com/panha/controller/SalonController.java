@@ -98,24 +98,36 @@ public class SalonController {
     }
 
     @GetMapping("/owner")
-    public ResponseEntity<?> getSalonByOwnerId(
-            @RequestHeader("Authorization") String jwt) throws Exception {
+    public ResponseEntity<SalonDTO> getSalonByOwnerId(
+            @RequestHeader("Authorization") String jwt
+    ) throws Exception {
 
-        UserDTO userDTO = userFeignClient.getUserProfile(jwt).getBody();
+        System.out.println("========== SALON OWNER API ==========");
+
+        UserDTO userDTO
+                = userFeignClient.getUserProfile(jwt).getBody();
+
+        System.out.println("USER DTO = " + userDTO);
 
         if (userDTO == null) {
-            return ResponseEntity.status(404)
-                    .body("User not found from JWT");
+            return ResponseEntity.notFound().build();
         }
 
-        Salon salon = salonService.getSalonByOwnerId(userDTO.getId());
+        System.out.println("OWNER ID = " + userDTO.getId());
+
+        Salon salon
+                = salonService.getSalonByOwnerId(userDTO.getId());
+
+        System.out.println("SALON = " + salon);
 
         if (salon == null) {
-            return ResponseEntity.status(404)
-                    .body("Salon not found for this owner");
+            return ResponseEntity.notFound().build();
         }
 
-        SalonDTO salonDTO = SalonMapper.mapToDTO(salon);
-        return ResponseEntity.ok(salonDTO);
+        SalonDTO dto = SalonMapper.mapToDTO(salon);
+
+        System.out.println("SALON DTO = " + dto);
+
+        return ResponseEntity.ok(dto);
     }
 }
