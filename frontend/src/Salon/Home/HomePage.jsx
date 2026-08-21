@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Avatar,
   AvatarGroup,
@@ -20,11 +20,24 @@ import {
   Close,
   CalendarMonth,
   AccessTime,
+  TrendingUp,
+  TrendingDown,
+  Insights,
+  Groups,
+  ReceiptLong,
+  EventBusy,
+  AutoAwesome,
 } from "@mui/icons-material";
 
 // accent green used for the new booking flow
 const GREEN = "#2E7D5B";
 const GREEN_SOFT = "rgba(46,125,91,0.12)";
+const GOLD = "#C9A227";
+const TERRACOTTA = "#E8927C";
+const SAGE = "#7C9885";
+const INK = "#12181F";
+const CARD = "#F6F4F0";
+const BG = "#F9FAFB";
 
 const TIME_SLOTS = [
   "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
@@ -254,6 +267,14 @@ const kpis = [
   { label: "Chairs Occupied", value: "72%", delta: "-4%", icon: ContentCut },
 ];
 
+// secondary analyst-facing KPIs
+const analystKpis = [
+  { label: "Avg. Ticket Size", value: "$71.30", delta: "+4.2%", icon: ReceiptLong, positive: true },
+  { label: "Client Retention", value: "64%", delta: "+2.1%", icon: Groups, positive: true },
+  { label: "No-show Rate", value: "3.8%", delta: "-1.4%", icon: EventBusy, positive: true },
+  { label: "Rebooking Rate", value: "58%", delta: "-3.0%", icon: Insights, positive: false },
+];
+
 const bookings = [
   { time: "09:00", client: "Amara Whitfield", service: "Balayage + Cut", stylist: "Noor", status: "confirmed" },
   { time: "09:30", client: "Leah Osei", service: "Gel Manicure", stylist: "Rin", status: "confirmed" },
@@ -274,6 +295,59 @@ const topServices = [
   { name: "Gel Manicure", pct: 64 },
   { name: "Skin Fade", pct: 51 },
   { name: "Keratin Treatment", pct: 39 },
+];
+
+// revenue series per period, for the analytics chart
+const revenueSeries = {
+  Week: {
+    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    values: [860, 940, 1010, 890, 1284, 1610, 1180],
+  },
+  Month: {
+    labels: ["W1", "W2", "W3", "W4"],
+    values: [5620, 6140, 5890, 7040],
+  },
+  Quarter: {
+    labels: ["Apr", "May", "Jun", "Jul"],
+    values: [21400, 23800, 22950, 26610],
+  },
+};
+
+// last vs. this period, for the comparison bars
+const comparisonSeries = {
+  Week: {
+    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    previous: [790, 860, 930, 810, 1120, 1440, 1020],
+    current: [860, 940, 1010, 890, 1284, 1610, 1180],
+  },
+  Month: {
+    labels: ["W1", "W2", "W3", "W4"],
+    previous: [5210, 5680, 5490, 6300],
+    current: [5620, 6140, 5890, 7040],
+  },
+  Quarter: {
+    labels: ["Apr", "May", "Jun", "Jul"],
+    previous: [19800, 21200, 21600, 24100],
+    current: [21400, 23800, 22950, 26610],
+  },
+};
+
+const insightNotes = [
+  {
+    icon: TrendingUp,
+    tone: SAGE,
+    text: "Saturday revenue is up 18% versus the trailing 4-week average, driven mostly by colour services.",
+  },
+  {
+    icon: TrendingDown,
+    tone: TERRACOTTA,
+    text: "Rebooking rate slipped 3 points this month. Clients seen by Marcus are least likely to rebook on the spot.",
+  },
+  {
+    icon: AutoAwesome,
+    tone: GOLD,
+    text: "Balayage clients have the highest average ticket ($96) and the highest 60-day repeat rate (71%).",
+  },
 ];
 
 const statusStyle = {
@@ -332,22 +406,241 @@ const Reveal = ({ children, delay = 0, className = "" }) => {
   );
 };
 
+// ---- analytics: revenue trend (SVG area/line chart with hover tooltip) ----
+const RevenueTrendChart = ({ labels, values, height = 220 }) => {
+  const [mounted, setMounted] = useState(false);
+  const [hoverIdx, setHoverIdx] = useState(null);
+  useEffect(() => {
+    setMounted(false);
+    const t = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(t);
+  }, [values]);
+
+  const width = 640;
+  const padX = 28;
+  const padTop = 18;
+  const padBottom = 30;
+  const max = Math.max(...values) * 1.12;
+  const min = 0;
+  const innerH = height - padTop - padBottom;
+  const stepX = (width - padX * 2) / (values.length - 1);
+
+  const points = values.map((v, i) => {
+    const x = padX + i * stepX;
+    const y = padTop + innerH - ((v - min) / (max - min)) * innerH;
+    return { x, y, v };
+  });
+
+  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+  const areaPath = `${linePath} L ${points[points.length - 1].x} ${padTop + innerH} L ${points[0].x} ${padTop + innerH} Z`;
+
+  // catmull-rom-ish smoothing kept simple: straight segments read cleanly at this size
+  const gridLines = 4;
+
+  return (
+    <div className="relative w-full">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ overflow: "visible" }}>
+        <defs>
+          <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={GREEN} stopOpacity="0.28" />
+            <stop offset="100%" stopColor={GREEN} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {/* gridlines */}
+        {Array.from({ length: gridLines + 1 }).map((_, i) => {
+          const y = padTop + (innerH / gridLines) * i;
+          return (
+            <line
+              key={i}
+              x1={padX}
+              x2={width - padX}
+              y1={y}
+              y2={y}
+              stroke="rgba(18,24,31,0.06)"
+              strokeWidth="1"
+            />
+          );
+        })}
+
+        {/* area fill, clipped to reveal on mount */}
+        <clipPath id="revealClip">
+          <rect
+            x="0"
+            y="0"
+            width={mounted ? width : 0}
+            height={height}
+            style={{ transition: "width 1s cubic-bezier(0.34, 1.2, 0.64, 1)" }}
+          />
+        </clipPath>
+        <g clipPath="url(#revealClip)">
+          <path d={areaPath} fill="url(#revenueFill)" />
+          <path d={linePath} fill="none" stroke={GREEN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
+
+        {/* hover targets + dots */}
+        {points.map((p, i) => (
+          <g key={i}>
+            <line
+              x1={p.x}
+              x2={p.x}
+              y1={padTop}
+              y2={padTop + innerH}
+              stroke={GREEN}
+              strokeWidth="1"
+              opacity={hoverIdx === i ? 0.25 : 0}
+              style={{ transition: "opacity 0.15s ease" }}
+            />
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={hoverIdx === i ? 5 : 3}
+              fill={hoverIdx === i ? GREEN : "#FFFFFF"}
+              stroke={GREEN}
+              strokeWidth="2"
+              opacity={mounted ? 1 : 0}
+              style={{ transition: "opacity 0.4s ease, r 0.15s ease" }}
+            />
+            <rect
+              x={p.x - stepX / 2}
+              y={padTop}
+              width={stepX}
+              height={innerH}
+              fill="transparent"
+              onMouseEnter={() => setHoverIdx(i)}
+              onMouseLeave={() => setHoverIdx(null)}
+              style={{ cursor: "pointer" }}
+            />
+            <text
+              x={p.x}
+              y={height - 8}
+              textAnchor="middle"
+              fontSize="11"
+              fill="#8B93A0"
+              fontFamily="'IBM Plex Mono', monospace"
+            >
+              {labels[i]}
+            </text>
+          </g>
+        ))}
+      </svg>
+
+      {hoverIdx !== null && (
+        <div
+          className="absolute px-2.5 py-1.5 rounded-lg text-xs pointer-events-none"
+          style={{
+            left: `${(points[hoverIdx].x / width) * 100}%`,
+            top: Math.max(points[hoverIdx].y - 46, 0),
+            transform: "translateX(-50%)",
+            backgroundColor: INK,
+            color: "#FFFFFF",
+            fontFamily: "'IBM Plex Mono', monospace",
+            whiteSpace: "nowrap",
+            boxShadow: "0 6px 16px rgba(18,24,31,0.25)",
+          }}
+        >
+          {labels[hoverIdx]} &middot; ${points[hoverIdx].v.toLocaleString()}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ---- analytics: this-period vs last-period grouped bars ----
+const ComparisonBars = ({ labels, previous, current }) => {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(false);
+    const t = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(t);
+  }, [current]);
+
+  const max = Math.max(...previous, ...current) * 1.1;
+
+  return (
+    <div className="flex items-end justify-between gap-2" style={{ height: 160 }}>
+      {labels.map((label, i) => (
+        <div key={label} className="flex-1 flex flex-col items-center gap-1.5">
+          <div className="w-full flex items-end justify-center gap-1" style={{ height: 128 }}>
+            <div
+              className="rounded-t-md"
+              style={{
+                width: 8,
+                height: mounted ? `${(previous[i] / max) * 100}%` : 0,
+                backgroundColor: "#DCD8D0",
+                transition: `height 0.7s cubic-bezier(0.34,1.2,0.64,1) ${i * 40}ms`,
+              }}
+              title={`Previous: $${previous[i].toLocaleString()}`}
+            />
+            <div
+              className="rounded-t-md"
+              style={{
+                width: 8,
+                height: mounted ? `${(current[i] / max) * 100}%` : 0,
+                backgroundColor: GREEN,
+                transition: `height 0.7s cubic-bezier(0.34,1.2,0.64,1) ${i * 40 + 60}ms`,
+              }}
+              title={`Current: $${current[i].toLocaleString()}`}
+            />
+          </div>
+          <span className="text-[10px] text-[#8B93A0]" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+            {label}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const PeriodTabs = ({ value, onChange, options }) => (
+  <div className="flex items-center rounded-full p-1" style={{ backgroundColor: "rgba(18,24,31,0.05)" }}>
+    {options.map((opt) => {
+      const active = value === opt;
+      return (
+        <button
+          key={opt}
+          onClick={() => onChange(opt)}
+          className="text-xs px-3 py-1 rounded-full font-medium"
+          style={{
+            backgroundColor: active ? GREEN : "transparent",
+            color: active ? "#FFFFFF" : "#6B6B6B",
+            transition: "background-color 0.2s ease, color 0.2s ease",
+          }}
+        >
+          {opt}
+        </button>
+      );
+    })}
+  </div>
+);
+
 function SalonDashboard() {
   const [barsIn, setBarsIn] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingDate, setBookingDate] = useState(null);
   const [bookingTime, setBookingTime] = useState(null);
+  const [period, setPeriod] = useState("Week");
+
   useEffect(() => {
     const t = requestAnimationFrame(() => setBarsIn(true));
     return () => cancelAnimationFrame(t);
   }, []);
 
+  const trend = useMemo(() => revenueSeries[period], [period]);
+  const comparison = useMemo(() => comparisonSeries[period], [period]);
+  const periodTotal = useMemo(() => trend.values.reduce((a, b) => a + b, 0), [trend]);
+  const periodDelta = useMemo(() => {
+    const prevTotal = comparison.previous.reduce((a, b) => a + b, 0);
+    const curTotal = comparison.current.reduce((a, b) => a + b, 0);
+    return (((curTotal - prevTotal) / prevTotal) * 100).toFixed(1);
+  }, [comparison]);
+
   return (
     <div
       className="min-h-screen w-full px-6 py-8 md:px-10 lg:px-14"
       style={{
-        backgroundColor: "#F9FAFB",
-        color: "#12181F",
+        backgroundColor: BG,
+        color: INK,
         fontFamily: "'Manrope', 'Inter', sans-serif",
       }}
     >
@@ -359,7 +652,7 @@ function SalonDashboard() {
           </p>
           <h1
             className="text-3xl md:text-4xl font-semibold"
-            style={{ fontFamily: "'Fraunces', serif", color: "#12181F" }}
+            style={{ fontFamily: "'Fraunces', serif", color: INK }}
           >
             Good afternoon, Priya
           </h1>
@@ -370,9 +663,9 @@ function SalonDashboard() {
 
         <div className="flex items-center gap-3">
           <AvatarGroup max={4}>
-            <Avatar sx={{ bgcolor: "#7C9885" }}>N</Avatar>
-            <Avatar sx={{ bgcolor: "#C9A227" }}>R</Avatar>
-            <Avatar sx={{ bgcolor: "#E8927C" }}>M</Avatar>
+            <Avatar sx={{ bgcolor: SAGE }}>N</Avatar>
+            <Avatar sx={{ bgcolor: GOLD }}>R</Avatar>
+            <Avatar sx={{ bgcolor: TERRACOTTA }}>M</Avatar>
           </AvatarGroup>
           <Button
             startIcon={<Add />}
@@ -399,16 +692,25 @@ function SalonDashboard() {
         </div>
       </Reveal>
 
-      <NewBookingDialog open={bookingOpen} onClose={() => setBookingOpen(false)} />
+      <NewBookingDialog
+        open={bookingOpen}
+        onClose={() => setBookingOpen(false)}
+        initialDate={bookingDate}
+        initialTime={bookingTime}
+        onConfirm={(d, t) => {
+          setBookingDate(d);
+          setBookingTime(t);
+        }}
+      />
 
-      {/* KPI row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      {/* Primary KPI row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {kpis.map(({ label, value, delta, icon: Icon }, i) => (
           <Reveal key={label} delay={80 * i}>
             <div
               className="rounded-2xl p-5 border border-[#12181F]/[0.06] group cursor-default"
               style={{
-                backgroundColor: "#F6F4F0",
+                backgroundColor: CARD,
                 transition: "transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease",
               }}
               onMouseEnter={(e) => {
@@ -428,7 +730,7 @@ function SalonDashboard() {
                     backgroundColor: label === "Bookings Today" ? GREEN_SOFT : "rgba(201,162,39,0.15)",
                   }}
                 >
-                  <Icon sx={{ fontSize: 18, color: label === "Bookings Today" ? GREEN : "#C9A227" }} />
+                  <Icon sx={{ fontSize: 18, color: label === "Bookings Today" ? GREEN : GOLD }} />
                 </div>
                 <span
                   className={`text-xs font-medium ${
@@ -450,13 +752,130 @@ function SalonDashboard() {
         ))}
       </div>
 
+      {/* Secondary analyst KPI row */}
+      <Reveal delay={60} className="mb-10">
+        <div className="rounded-2xl border border-[#12181F]/[0.06] p-5" style={{ backgroundColor: "#FFFFFF" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <Insights sx={{ fontSize: 16, color: GREEN }} />
+            <span className="text-xs font-medium uppercase tracking-wide text-[#6B6B6B]">
+              Analyst Metrics
+            </span>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+            {analystKpis.map(({ label, value, delta, icon: Icon, positive }) => (
+              <div key={label} className="flex items-start gap-3">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: GREEN_SOFT }}
+                >
+                  <Icon sx={{ fontSize: 16, color: GREEN }} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-lg font-semibold leading-tight" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+                    {value}
+                  </p>
+                  <p className="text-xs text-[#6B6B6B] truncate">{label}</p>
+                  <span
+                    className="text-[11px] font-medium inline-flex items-center gap-0.5 mt-0.5"
+                    style={{ color: positive ? "#5E8A69" : "#C4695A" }}
+                  >
+                    {positive ? <TrendingUp sx={{ fontSize: 12 }} /> : <TrendingDown sx={{ fontSize: 12 }} />}
+                    {delta}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Reveal>
+
+      {/* Analytics: revenue trend + comparison */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <Reveal delay={120} className="lg:col-span-2">
+          <div className="rounded-2xl border border-[#12181F]/[0.06] p-6" style={{ backgroundColor: CARD }}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-1">
+              <div>
+                <h2 className="text-lg font-semibold" style={{ fontFamily: "'Fraunces', serif" }}>
+                  Revenue Trend
+                </h2>
+                <p className="text-xs text-[#6B6B6B] mt-0.5">
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color: INK }}>
+                    ${periodTotal.toLocaleString()}
+                  </span>{" "}
+                  total &middot;{" "}
+                  <span style={{ color: periodDelta.startsWith("-") ? "#C4695A" : "#5E8A69", fontWeight: 600 }}>
+                    {periodDelta.startsWith("-") ? "" : "+"}
+                    {periodDelta}%
+                  </span>{" "}
+                  vs. prior {period.toLowerCase()}
+                </p>
+              </div>
+              <PeriodTabs value={period} onChange={setPeriod} options={["Week", "Month", "Quarter"]} />
+            </div>
+            <div className="mt-4">
+              <RevenueTrendChart labels={trend.labels} values={trend.values} />
+            </div>
+          </div>
+        </Reveal>
+
+        <Reveal delay={160}>
+          <div className="rounded-2xl border border-[#12181F]/[0.06] p-6 h-full" style={{ backgroundColor: CARD }}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-sm font-medium text-[#6B6B6B]">Current vs. Prior</h3>
+              <div className="flex items-center gap-3 text-[10px] text-[#8B93A0]">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: "#DCD8D0" }} />
+                  Prior
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: GREEN }} />
+                  Current
+                </span>
+              </div>
+            </div>
+            <div className="mt-4">
+              <ComparisonBars labels={comparison.labels} previous={comparison.previous} current={comparison.current} />
+            </div>
+          </div>
+        </Reveal>
+      </div>
+
+      {/* Analyst insights strip */}
+      <Reveal delay={200} className="mb-10">
+        <div className="rounded-2xl border border-[#12181F]/[0.06] p-6" style={{ backgroundColor: "#FFFFFF" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <AutoAwesome sx={{ fontSize: 16, color: GOLD }} />
+            <h3 className="text-sm font-semibold" style={{ fontFamily: "'Fraunces', serif" }}>
+              Insights this week
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {insightNotes.map((n, i) => (
+              <div
+                key={i}
+                className="rounded-xl p-4 flex gap-3"
+                style={{ backgroundColor: BG, border: "1px solid rgba(18,24,31,0.06)" }}
+              >
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: `${n.tone}22` }}
+                >
+                  <n.icon sx={{ fontSize: 15, color: n.tone }} />
+                </div>
+                <p className="text-xs leading-relaxed text-[#3A3F45]">{n.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Reveal>
+
       {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Today's Book (ledger list) */}
         <Reveal delay={120} className="lg:col-span-2">
           <div
             className="rounded-2xl border border-[#12181F]/[0.06] p-6"
-            style={{ backgroundColor: "#F6F4F0", color: "#12181F" }}
+            style={{ backgroundColor: CARD, color: INK }}
           >
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-semibold" style={{ fontFamily: "'Fraunces', serif" }}>
@@ -538,7 +957,7 @@ function SalonDashboard() {
           <Reveal delay={200}>
             <div
               className="rounded-2xl border border-[#12181F]/[0.06] p-6 flex flex-col items-center"
-              style={{ backgroundColor: "#F6F4F0" }}
+              style={{ backgroundColor: CARD }}
             >
               <h3 className="text-sm font-medium self-start mb-2 text-[#6B6B6B]">
                 Chair Occupancy
@@ -578,7 +997,7 @@ function SalonDashboard() {
           <Reveal delay={260}>
             <div
               className="rounded-2xl border border-[#12181F]/[0.06] p-6"
-              style={{ backgroundColor: "#F6F4F0" }}
+              style={{ backgroundColor: CARD }}
             >
               <h3 className="text-sm font-medium mb-4 text-[#6B6B6B]">
                 Top Services This Week

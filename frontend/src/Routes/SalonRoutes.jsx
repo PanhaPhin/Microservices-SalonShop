@@ -14,6 +14,9 @@ import ViewAccount from "../Salon/Profile/ViewAccount";
 import Notification from "../Salon/Notifications/Notification";
 import CreateNotificationForm from "../Salon/Notifications/CreateNotificationForm";
 import Setting from "../Salon/Setting/Setting";
+import Branch from "../Salon/Branch/Branch";
+import Customer from "../Salon/Customers/Customer";
+import Offers from "../Salon/offers/Offers";
 
 
 const SalonRoutes = () => {
@@ -29,6 +32,9 @@ const SalonRoutes = () => {
       <Route path="/add-notification" element={<CreateNotificationForm />} />
       <Route path="/salon-dashboard" element={<SalonDashboard />} />
       <Route path="/view-account" element={<ViewAccount />} />
+      <Route path="/branch" element={<Branch/>} />
+      <Route path="/customer" element={<Customer/>} />
+      <Route path="/offers" element={<Offers/>} />
       <Route path="/setting" element={<Setting />} />
       <Route path="/payment" element={<Payment />} />
       <Route path="/account" element={<Profile />} />

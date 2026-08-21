@@ -102,7 +102,7 @@ const menu = [
 
   {
     name: "Customers",
-    path: "/salon-dashboard/customers",
+    path: "/salon-dashboard/customer",
     icon: <People />,
     activeIcon: <People color="primary" />,
   },
