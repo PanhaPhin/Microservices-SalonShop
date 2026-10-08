@@ -20,46 +20,82 @@ public class SalonServiceImpl implements SalonService {
 
     @Override
     public Salon createSalon(SalonDTO req, UserDTO user) {
+
+        if (user == null || user.getId() == null) {
+            throw new IllegalArgumentException(
+                    "Authenticated user not found"
+            );
+        }
+
         Salon salon = new Salon();
+
         salon.setName(req.getName());
+        salon.setDescription(req.getDescription());
+        salon.setImage(req.getImage());
+    
+
         salon.setAddress(req.getAddress());
+        salon.setPhoneNumber(req.getPhoneNumber());
         salon.setEmail(req.getEmail());
         salon.setCity(req.getCity());
-        salon.setImage(req.getImage());
+        salon.setPincode(req.getPincode());
+        
+
+        // Owner comes from authenticated user
         salon.setOwnerId(user.getId());
+
         salon.setOpenTime(req.getOpenTime());
         salon.setCloseTime(req.getCloseTime());
-        salon.setPhoneNumber(req.getPhoneNumber());
 
         return salonRespository.save(salon);
     }
 
     @Override
-    public Salon updateSalon(SalonDTO salon, UserDTO user, Long salonId) throws Exception {
+    public Salon updateSalon(
+            SalonDTO req,
+            UserDTO user,
+            Long salonId
+    ) throws Exception {
 
-        Salon existingSalon = salonRespository.findById(salonId)
-                .orElseThrow(() -> new Exception("Salon not exist"));
+        Salon existingSalon =
+                salonRespository.findById(salonId)
+                        .orElseThrow(() ->
+                                new Exception(
+                                        "Salon does not exist"
+                                )
+                        );
 
-        if (!existingSalon.getOwnerId().equals(user.getId())) {
-            throw new Exception("You don't have permission to update this salon");
+        if (user == null || user.getId() == null) {
+            throw new Exception(
+                    "Authenticated user not found"
+            );
         }
 
-        if (existingSalon != null) {
-            existingSalon.setCity(salon.getCity());
-            existingSalon.setName(salon.getName());
-            existingSalon.setAddress(salon.getAddress());
-            existingSalon.setEmail(salon.getEmail());
-            existingSalon.setImage(salon.getImage());
-            existingSalon.setOpenTime(salon.getOpenTime());
-            existingSalon.setCloseTime(salon.getCloseTime());
-            existingSalon.setPhoneNumber(salon.getPhoneNumber());
+        // Only the owner can update the salon
+        if (!existingSalon.getOwnerId()
+                .equals(user.getId())) {
 
-            return salonRespository.save(existingSalon);
-
+            throw new Exception(
+                    "You don't have permission to update this salon"
+            );
         }
 
-        throw new Exception("salon not exist");
+        existingSalon.setName(req.getName());
+        existingSalon.setDescription(req.getDescription());
+        existingSalon.setImage(req.getImage());
+
+        existingSalon.setAddress(req.getAddress());
+        existingSalon.setPhoneNumber(req.getPhoneNumber());
+        existingSalon.setEmail(req.getEmail());
+        existingSalon.setCity(req.getCity());
+        existingSalon.setPincode(req.getPincode());
+
+        existingSalon.setOpenTime(req.getOpenTime());
+        existingSalon.setCloseTime(req.getCloseTime());
+
+        return salonRespository.save(existingSalon);
     }
+
 
     @Override
     public List<Salon> getAllSalon() {
@@ -68,22 +104,23 @@ public class SalonServiceImpl implements SalonService {
 
     @Override
     public Salon getSalonById(Long salonId) throws Exception {
-        Salon salon = salonRespository.findById(salonId).orElse(null);
-        if (salon == null) {
-            throw new Exception("salon not exist");
 
-        }
-        return salon;
+        return salonRespository
+                .findById(salonId)
+                .orElseThrow(() ->
+                        new Exception("Salon does not exist")
+                );
     }
 
     @Override
     public Salon getSalonByOwnerId(Long ownerId) {
+
         return salonRespository.findByOwnerId(ownerId);
     }
 
     @Override
     public List<Salon> searchSalonByCity(String city) {
+
         return salonRespository.searchSalon(city);
     }
-
 }

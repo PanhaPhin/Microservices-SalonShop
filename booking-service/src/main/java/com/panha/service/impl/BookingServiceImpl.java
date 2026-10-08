@@ -169,13 +169,13 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-public Booking bookingSuccess(PaymentOrder paymentOrder) throws Exception {
+    public Booking bookingSuccess(PaymentOrder paymentOrder) throws Exception {
 
-    Booking existingBooking = getBookingById(paymentOrder.getBookingId());
+        Booking existingBooking = getBookingById(paymentOrder.getBookingId());
 
-    existingBooking.setStatus(BookingStatus.CONFIRMED);
+        existingBooking.setStatus(BookingStatus.CONFIRMED);
 
-    return bookingRepository.save(existingBooking);
-}
+        return bookingRepository.save(existingBooking);
+    }
 
 }

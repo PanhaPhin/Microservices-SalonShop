@@ -16,7 +16,6 @@ import {
     GET_ALL_CUSTOMER_FAILURE,
 
     LOGOUT
-
 } from "./actionTypes";
 
 
@@ -26,8 +25,8 @@ const initialState = {
     customers: [],
     isLoading: false,
     fetchingUser: false,
+    authInitialized: false,
     error: null,
-    jwt: null,
 };
 
 
@@ -37,12 +36,20 @@ const authReducer = (state = initialState, action) => {
 
         case REGISTER_REQUEST:
         case LOGIN_REQUEST:
-        case GET_USER_REQUEST:
         case GET_ALL_CUSTOMER_REQUEST:
 
             return {
                 ...state,
                 isLoading: true,
+                error: null
+            };
+
+
+        case GET_USER_REQUEST:
+            return {
+                ...state,
+                fetchingUser: true,
+                authInitialized: false,
                 error: null
             };
 
@@ -53,17 +60,19 @@ const authReducer = (state = initialState, action) => {
             return {
                 ...state,
                 isLoading: false,
-                jwt: action.payload?.jwt
+                user: action.payload,
+                jwt: action.payload?.jwt || null,
+                error: null
             };
 
 
         case GET_USER_SUCCESS:
-
             return {
                 ...state,
-                isLoading: false,
+                fetchingUser: false,
+                authInitialized: true,
                 user: action.payload,
-                fetchingUser: false
+                error: null
             };
 
 
@@ -72,13 +81,13 @@ const authReducer = (state = initialState, action) => {
             return {
                 ...state,
                 isLoading: false,
-                customers: action.payload
+                customers: action.payload,
+                error: null
             };
 
 
         case REGISTER_FAILURE:
         case LOGIN_FAILURE:
-        case GET_USER_FAILURE:
         case GET_ALL_CUSTOMER_FAILURE:
 
             return {
@@ -88,14 +97,22 @@ const authReducer = (state = initialState, action) => {
             };
 
 
+        case GET_USER_FAILURE:
+            return {
+                ...state,
+                fetchingUser: false,
+                authInitialized: true,
+                user: null,
+                error: action.payload
+            };
+
+
         case LOGOUT:
 
             localStorage.removeItem("jwt");
 
             return {
-                ...state,
-                jwt: null,
-                user: null
+                ...initialState
             };
 
 

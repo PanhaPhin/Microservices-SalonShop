@@ -1,9 +1,31 @@
 import React from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Box, Button, Typography } from "@mui/material";
+
+import LoginBackground from "./LoginBackground";
 import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Button, Box, Paper, Typography } from "@mui/material";
 
+/* ---------- styles ---------- */
+const cardSx = {
+  p: { xs: 3, sm: 4.5 },
+  borderRadius: 4,
+  bgcolor: "rgba(15, 23, 42, 0.72)",
+  border: "1px solid rgba(148, 163, 184, 0.18)",
+  backdropFilter: "blur(18px)",
+  WebkitBackdropFilter: "blur(18px)",
+  boxShadow: "0 24px 60px rgba(0, 0, 0, 0.45)",
+};
+
+const linkButtonSx = {
+  ml: 0.5,
+  textTransform: "none",
+  fontWeight: 600,
+  color: "#38bdf8",
+  "&:hover": { bgcolor: "rgba(56, 189, 248, 0.1)" },
+};
+
+/* ---------- component ---------- */
 const Auth = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -11,69 +33,24 @@ const Auth = () => {
   const isRegister = location.pathname === "/register";
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(135deg, #667eea, #764ba2)",
-        p: 2,
-      }}
-    >
-      <Paper
-        elevation={10}
-        sx={{
-          width: 420,
-          borderRadius: 4,
-          p: 4,
-        }}
-      >
-        {isRegister ? (
-          <>
-            <SignupForm />
+    <LoginBackground>
+      <Box sx={cardSx}>
+        {isRegister ? <SignupForm /> : <LoginForm />}
 
-            <Box
-              sx={{
-                textAlign: "center",
-                mt: 3,
-              }}
+        <Box sx={{ textAlign: "center", mt: 3 }}>
+          <Typography variant="body2" sx={{ color: "#94a3b8" }}>
+            {isRegister ? "Already have an account?" : "Don't have an account?"}
+            <Button
+              size="small"
+              sx={linkButtonSx}
+              onClick={() => navigate(isRegister ? "/login" : "/register")}
             >
-              <Typography variant="body2">
-                Already have an account?
-                <Button
-                  size="small"
-                  onClick={() => navigate("/login")}
-                >
-                  Login
-                </Button>
-              </Typography>
-            </Box>
-          </>
-        ) : (
-          <>
-            <LoginForm />
-
-            <Box
-              sx={{
-                textAlign: "center",
-                mt: 3,
-              }}
-            >
-              <Typography variant="body2">
-                Don't have an account?
-                <Button
-                  size="small"
-                  onClick={() => navigate("/register")}
-                >
-                  Sign Up
-                </Button>
-              </Typography>
-            </Box>
-          </>
-        )}
-      </Paper>
-    </Box>
+              {isRegister ? "Log in" : "Sign up"}
+            </Button>
+          </Typography>
+        </Box>
+      </Box>
+    </LoginBackground>
   );
 };
 

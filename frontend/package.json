@@ -12,7 +12,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@mui/icons-material": "^9.0.1",
+    "@mui/icons-material": "^9.4.0",
     "@mui/material": "^9.2.0",
     "@mui/x-date-pickers": "^9.10.1",
     "@stripe/react-stripe-js": "^6.8.0",
@@ -22,6 +22,8 @@
     "axios": "^1.18.1",
     "dayjs": "^1.11.21",
     "formik": "^2.4.9",
+    "jwt-decode": "^4.0.0",
+    "lucide-react": "^1.46.0",
     "postcss": "^8.5.15",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
@@ -31,6 +33,7 @@
     "redux-thunk": "^3.1.0",
     "sweetalert2": "^11.26.25",
     "tailwindcss": "^4.3.0",
+    "xlsx": "^0.18.5",
     "yub": "^0.11.1",
     "yup": "^1.7.1"
   },

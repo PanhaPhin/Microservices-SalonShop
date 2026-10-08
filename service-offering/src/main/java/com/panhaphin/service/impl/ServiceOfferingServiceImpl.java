@@ -14,13 +14,14 @@ import com.panhaphin.modal.ServiceOffering;
 import com.panhaphin.repository.ServiceOfferingRepository;
 import com.panhaphin.service.ServiceOfferingService;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class ServiceOfferingServiceImpl implements ServiceOfferingService {
 
     private final ServiceOfferingRepository serviceOfferingRepository;
+
+    public ServiceOfferingServiceImpl(ServiceOfferingRepository serviceOfferingRepository) {
+        this.serviceOfferingRepository = serviceOfferingRepository;
+    }
 
     @Override
     public ServiceOffering createService(SalonDTO salonDto, ServiceDTO serviceDTO, CategoryDTO categoryDTO) {
@@ -53,6 +54,7 @@ public class ServiceOfferingServiceImpl implements ServiceOfferingService {
         serviceOffering.setDescription(service.getDescription());
         serviceOffering.setPrice(service.getPrice());
         serviceOffering.setDuration(service.getDuration());
+        serviceOffering.setCategoryId(service.getCategoryId());   
 
         return serviceOfferingRepository.save(serviceOffering);
     }
@@ -62,7 +64,7 @@ public class ServiceOfferingServiceImpl implements ServiceOfferingService {
         Set<ServiceOffering> services = serviceOfferingRepository.findBySalonId(salonId);
         if (categoryId != null) {
             services = services.stream().filter((service) -> service.getCategoryId() != null
-                    && service.getCategoryId() == categoryId).collect(Collectors.toSet());
+                    && service.getCategoryId().equals(categoryId)).collect(Collectors.toSet());
         }
         return services;
     }
@@ -91,6 +93,14 @@ public class ServiceOfferingServiceImpl implements ServiceOfferingService {
         // Fetch all services from the repository and return as a Set
         List<ServiceOffering> services = serviceOfferingRepository.findAll();
         return new HashSet<>(services);
+    }
+
+    @Override
+    public void deleteService(Long id) throws Exception {
+        ServiceOffering service = serviceOfferingRepository.findById(id)
+                .orElseThrow(() -> new Exception("Service not found with id: " + id));
+
+        serviceOfferingRepository.delete(service);
     }
 
 }

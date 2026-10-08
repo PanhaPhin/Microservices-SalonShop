@@ -38,6 +38,14 @@ public class KeycloakRoleConverter implements Converter<Jwt, Collection<GrantedA
             });
         }
 
+        System.out.println("========== KEYCLOAK DEBUG ==========");
+        System.out.println("realm_access = " + realmAccess);
+        System.out.println("resource_access = " + resourceAccess);
+        System.out.println("authorities = " + authorities);
+        System.out.println("====================================");
+
+        
+
         return authorities;
     }
 }

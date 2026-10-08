@@ -19,21 +19,7 @@ const validationSchema = Yup.object({
     .required("Category name is required")
     .min(2, "Minimum 2 characters")
     .max(100, "Maximum 100 characters"),
-
-  image: Yup.string().nullable(),
 });
-
-const fileToBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.readAsDataURL(file);
-
-    reader.onload = () => resolve(reader.result);
-
-    reader.onerror = (error) => reject(error);
-  });
-};
 
 export default function CategoryForm() {
   const [preview, setPreview] = useState(null);
@@ -47,7 +33,6 @@ export default function CategoryForm() {
   const formik = useFormik({
     initialValues: {
       name: "",
-      image: "",
     },
 
     validationSchema,
@@ -58,19 +43,29 @@ export default function CategoryForm() {
         setSuccess("");
         setError("");
 
-        const categoryData = {
-          name: values.name.trim(),
-          image: values.image || null,
-        };
+        // Backend expects multipart/form-data
+        const formData = new FormData();
 
-        console.log("Sending category:", categoryData);
+        formData.append("name", values.name.trim());
+
+        if (imageFile) {
+          formData.append("image", imageFile);
+        }
+
+        console.log("Sending category:", {
+          name: values.name.trim(),
+          image: imageFile?.name || null,
+        });
 
         const response = await api.post(
           "/api/categories/salon-owner",
-          categoryData
+          formData
         );
 
-        console.log("Create category response:", response.data);
+        console.log(
+          "Create category response:",
+          response.data
+        );
 
         setSuccess("Category created successfully.");
 
@@ -109,7 +104,7 @@ export default function CategoryForm() {
     },
   });
 
-  const handleImageChange = async (event) => {
+  const handleImageChange = (event) => {
     const file = event.target.files?.[0];
 
     if (!file) return;
@@ -129,16 +124,13 @@ export default function CategoryForm() {
 
       setImageFile(file);
 
+      // Preview only
       const imageUrl = URL.createObjectURL(file);
       setPreview(imageUrl);
 
-      const base64 = await fileToBase64(file);
-
-      formik.setFieldValue("image", base64);
-
-      console.log("Image converted to Base64");
+      console.log("Selected image:", file.name);
     } catch (error) {
-      console.error("Image conversion error:", error);
+      console.error("Image selection error:", error);
       setError("Failed to process image.");
     }
   };
@@ -146,8 +138,6 @@ export default function CategoryForm() {
   const handleRemoveImage = () => {
     setImageFile(null);
     setPreview(null);
-
-    formik.setFieldValue("image", "");
 
     if (fileRef.current) {
       fileRef.current.value = "";

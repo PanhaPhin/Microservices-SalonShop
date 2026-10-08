@@ -10,19 +10,22 @@ import lombok.Data;
 @Data
 public class SalonDTO {
 
+    // private Long id;
+    // private String name;
+    // private List<String> image;
+    // private String address;
+    // private String phoneNumber;
+    // private String email;
+    // private String city;
+    // private Long ownerId;
+
+    // @JsonFormat(pattern = "HH:mm:ss")
+    // private LocalTime openTime;
+
+    // @JsonFormat(pattern = "HH:mm:ss")
+    // private LocalTime closeTime;
     private Long id;
-    private String name;
-    private List<String> image;
-    private String address;
-    private String phoneNumber;
-    private String email;
-    private String city;
+
     private Long ownerId;
-
-    @JsonFormat(pattern = "HH:mm:ss")
-    private LocalTime openTime;
-
-    @JsonFormat(pattern = "HH:mm:ss")
-    private LocalTime closeTime;
 
 }

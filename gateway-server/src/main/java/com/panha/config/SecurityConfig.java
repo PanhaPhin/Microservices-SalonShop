@@ -32,17 +32,16 @@ public class SecurityConfig {
                 .authorizeExchange(exchanges -> exchanges
                 .pathMatchers("/auth/**").permitAll()
                 .pathMatchers("/api/notification/ws/**").permitAll()
-                
                 .pathMatchers(
                         "/api/categories/salon-owner/**",
                         "/api/notifications/salon-owner/**",
-                        "/api/service-offering/salon-owner/**"
+                        // "/api/service-offering/salon-owner/**"
+                        "/api/service-offerings/salon-owner/**"
                 )
-                .hasRole("SALON_OWNER")
-              
+                // .hasRole("SALON_OWNER")
+                .hasAnyRole("SALON_OWNER", "ADMIN")
                 .pathMatchers("/api/users/**")
                 .hasAnyRole("CUSTOMER", "SALON_OWNER", "ADMIN")
-              
                 .pathMatchers(
                         "/api/salons/**",
                         "/api/categories/**",
@@ -50,6 +49,7 @@ public class SecurityConfig {
                         "/api/bookings/**",
                         "/api/payments/**",
                         "/api/service-offering/**",
+                        "/api/service-offerings/**",
                         "/api/reviews/**"
                 )
                 .hasAnyRole("CUSTOMER", "SALON_OWNER", "ADMIN")

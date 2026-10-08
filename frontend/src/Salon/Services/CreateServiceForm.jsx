@@ -29,13 +29,12 @@ import api from "../../config/api";
 
 const GREEN = "#15803d";
 const GREEN_SOFT = "rgba(21,128,61,0.10)";
+const BORDER = "rgba(18,24,31,0.08)";
 
 const FALLBACK_IMAGE =
   "https://images.pexels.com/photos/6876708/pexels-photo-6876708.jpeg";
 
-
-const SERVICE_API = "/api/service-offering";
-
+const SERVICE_API = "/api/service-offerings/salon-owner";
 const CATEGORY_API = "/api/categories/salon-owner";
 
 const DURATIONS = [15, 30, 45, 60, 90];
@@ -136,6 +135,9 @@ function ServiceDialog({
   const [saving, setSaving] = useState(false);
 
   const fileRef = useRef(null);
+  // Tracks the current blob: URL (if any) so we can revoke it instead of
+  // leaking it every time the user picks a new image.
+  const objectUrlRef = useRef(null);
 
   const isEdit = Boolean(editingService);
 
@@ -157,6 +159,10 @@ function ServiceDialog({
       try {
         setSaving(true);
 
+        // Create and update now send the same field name (categoryId) —
+        // previously create sent `category` while update sent
+        // `categoryId`, so a service's category could silently fail to
+        // save depending on which action was used.
         const payload = {
           name: values.name.trim(),
           description: values.description.trim(),
@@ -166,28 +172,26 @@ function ServiceDialog({
           image: values.image || null,
         };
 
-        let response;
+        const response = isEdit
+          ? await api.put(`${SERVICE_API}/${editingService.id}`, payload)
+          : await api.post(SERVICE_API, payload);
 
-        if (isEdit) {
-          response = await api.put(
-            `${SERVICE_API}/${editingService.id}`,
-            payload
-          );
-        } else {
-          response = await api.post(SERVICE_API, payload);
-        }
+        const savedService = {
+          id: response?.data?.id ?? editingService?.id,
+          ...payload,
+          ...response?.data,
+        };
 
-        onSave(response.data);
+        onSave(savedService);
       } catch (error) {
         console.error("Failed to save service:", error);
-
         console.error("Response:", error?.response?.data);
         console.error("Status:", error?.response?.status);
 
         alert(
           error?.response?.data?.message ||
-            error?.response?.data ||
-            "Failed to save service"
+          error?.response?.data ||
+          "Failed to save service"
         );
       } finally {
         setSaving(false);
@@ -202,6 +206,19 @@ function ServiceDialog({
       setPreview(null);
     }
   }, [editingService]);
+
+  // Revoke whatever blob: URL is currently in use, if any.
+  const revokeCurrentObjectUrl = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+  };
+
+  // Clean up on unmount so a leftover preview URL isn't held forever.
+  useEffect(() => {
+    return () => revokeCurrentObjectUrl();
+  }, []);
 
   const handleImage = async (event) => {
     const file = event.target.files?.[0];
@@ -219,7 +236,10 @@ function ServiceDialog({
     }
 
     try {
+      revokeCurrentObjectUrl();
+
       const objectUrl = URL.createObjectURL(file);
+      objectUrlRef.current = objectUrl;
 
       setPreview(objectUrl);
 
@@ -232,6 +252,7 @@ function ServiceDialog({
   };
 
   const removeImage = () => {
+    revokeCurrentObjectUrl();
     setPreview(null);
     formik.setFieldValue("image", "");
 
@@ -243,6 +264,7 @@ function ServiceDialog({
   const handleDialogClose = () => {
     if (saving) return;
 
+    revokeCurrentObjectUrl();
     formik.resetForm();
     setPreview(null);
 
@@ -257,11 +279,10 @@ function ServiceDialog({
     `w-full px-3 py-2 text-sm rounded-lg border bg-white outline-none transition-all
      placeholder:text-gray-400 text-gray-900
      focus:ring-2 focus:ring-green-700/10 focus:border-green-700
-     ${
-       formik.touched[field] && formik.errors[field]
-         ? "border-red-400"
-         : "border-gray-200"
-     }`;
+     ${formik.touched[field] && formik.errors[field]
+      ? "border-red-400"
+      : "border-gray-200"
+    }`;
 
   return (
     <Dialog
@@ -484,11 +505,10 @@ function ServiceDialog({
                         formik.setFieldTouched("duration", true)
                       }
                       disabled={saving}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all cursor-pointer ${
-                        Number(formik.values.duration) === duration
-                          ? "bg-green-700 text-white border-green-700"
-                          : "bg-gray-50 text-gray-600 border-gray-200 hover:border-green-700 hover:text-green-700"
-                      }`}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all cursor-pointer ${Number(formik.values.duration) === duration
+                        ? "bg-green-700 text-white border-green-700"
+                        : "bg-gray-50 text-gray-600 border-gray-200 hover:border-green-700 hover:text-green-700"
+                        }`}
                     >
                       {duration}m
                     </button>
@@ -638,16 +658,13 @@ export default function ServicesPage() {
     return rows.filter((row) => {
       const name = row.name?.toLowerCase() || "";
 
-      const description =
-        row.description?.toLowerCase() || "";
+      const description = row.description?.toLowerCase() || "";
 
       const category = categories.find(
-        (item) =>
-          Number(item.id) === Number(row.categoryId)
+        (item) => Number(item.id) === Number(row.categoryId)
       );
 
-      const categoryName =
-        category?.name?.toLowerCase() || "";
+      const categoryName = category?.name?.toLowerCase() || "";
 
       return (
         name.includes(q) ||
@@ -659,8 +676,7 @@ export default function ServicesPage() {
 
   const getCategoryName = (categoryId) => {
     const category = categories.find(
-      (item) =>
-        Number(item.id) === Number(categoryId)
+      (item) => Number(item.id) === Number(categoryId)
     );
 
     return category?.name || "Unknown";
@@ -668,15 +684,11 @@ export default function ServicesPage() {
 
   const handleSave = (savedService) => {
     setRows((previous) => {
-      const exists = previous.some(
-        (row) => row.id === savedService.id
-      );
+      const exists = previous.some((row) => row.id === savedService.id);
 
       if (exists) {
         return previous.map((row) =>
-          row.id === savedService.id
-            ? savedService
-            : row
+          row.id === savedService.id ? savedService : row
         );
       }
 
@@ -713,9 +725,7 @@ export default function ServicesPage() {
 
       await api.delete(`${SERVICE_API}/${id}`);
 
-      setRows((previous) =>
-        previous.filter((row) => row.id !== id)
-      );
+      setRows((previous) => previous.filter((row) => row.id !== id));
     } catch (error) {
       console.error("Failed to delete service:", error);
       console.error("Status:", error?.response?.status);
@@ -723,8 +733,8 @@ export default function ServicesPage() {
 
       alert(
         error?.response?.data?.message ||
-          error?.response?.data ||
-          "Failed to delete service"
+        error?.response?.data ||
+        "Failed to delete service"
       );
     } finally {
       setDeleteLoading(null);
@@ -742,6 +752,9 @@ export default function ServicesPage() {
       style={{
         backgroundColor: "#F9FAFB",
         fontFamily: "'Manrope', 'Inter', sans-serif",
+        // Stops this page from forcing the whole app to overflow
+        // horizontally if it sits inside a flex/grid dashboard shell.
+        minWidth: 0,
       }}
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-6">
@@ -781,7 +794,7 @@ export default function ServicesPage() {
             className="flex items-center gap-2 rounded-xl px-3 py-2 border w-full md:w-64"
             style={{
               backgroundColor: "#fff",
-              borderColor: "rgba(18,24,31,0.08)",
+              borderColor: BORDER,
             }}
           >
             <Search
@@ -794,9 +807,7 @@ export default function ServicesPage() {
             <InputBase
               placeholder="Search services…"
               value={query}
-              onChange={(event) =>
-                setQuery(event.target.value)
-              }
+              onChange={(event) => setQuery(event.target.value)}
               sx={{
                 fontSize: 14,
                 flex: 1,
@@ -804,10 +815,7 @@ export default function ServicesPage() {
             />
 
             {query && (
-              <IconButton
-                size="small"
-                onClick={() => setQuery("")}
-              >
+              <IconButton size="small" onClick={() => setQuery("")}>
                 <Close sx={{ fontSize: 14 }} />
               </IconButton>
             )}
@@ -833,58 +841,42 @@ export default function ServicesPage() {
         elevation={0}
         sx={{
           borderRadius: "16px",
-          border: "1px solid rgba(18,24,31,0.06)",
-          overflow: "hidden",
+          border: `1px solid ${BORDER}`,
+          // Scrolls internally on narrow screens instead of clipping the
+          // Action column or pushing the page off-screen.
+          overflowX: "auto",
+          maxWidth: "100%",
+          boxShadow: "0 1px 2px rgba(18,24,31,0.04)",
         }}
       >
-        <Table
-          sx={{ minWidth: 900 }}
-          aria-label="services table"
-        >
+        <Table sx={{ minWidth: 900 }} aria-label="services table">
+          <colgroup>
+            <col style={{ width: "18%" }} />
+            <col style={{ width: 84 }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "28%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: 160 }} />
+          </colgroup>
+
           <TableHead>
             <TableRow>
-              <StyledTableCell>
-                Service
-              </StyledTableCell>
-
-              <StyledTableCell>
-                Image
-              </StyledTableCell>
-
-              <StyledTableCell>
-                Category
-              </StyledTableCell>
-
-              <StyledTableCell>
-                Description
-              </StyledTableCell>
-
-              <StyledTableCell>
-                Duration
-              </StyledTableCell>
-
-              <StyledTableCell align="right">
-                Price
-              </StyledTableCell>
-
-              <StyledTableCell align="center">
-                Action
-              </StyledTableCell>
+              <StyledTableCell>Service</StyledTableCell>
+              <StyledTableCell>Image</StyledTableCell>
+              <StyledTableCell>Category</StyledTableCell>
+              <StyledTableCell>Description</StyledTableCell>
+              <StyledTableCell>Duration</StyledTableCell>
+              <StyledTableCell align="right">Price</StyledTableCell>
+              <StyledTableCell align="center">Action</StyledTableCell>
             </TableRow>
           </TableHead>
 
           <TableBody>
             {loading ? (
               <TableRow>
-                <StyledTableCell
-                  colSpan={7}
-                  align="center"
-                  sx={{ py: 8 }}
-                >
-                  <CircularProgress
-                    size={30}
-                    sx={{ color: GREEN }}
-                  />
+                <StyledTableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                  <CircularProgress size={30} sx={{ color: GREEN }} />
 
                   <p className="text-sm text-gray-500 mt-3">
                     Loading services...
@@ -909,15 +901,11 @@ export default function ServicesPage() {
             ) : (
               filtered.map((row) => (
                 <StyledTableRow key={row.id}>
-                  <StyledTableCell
-                    component="th"
-                    scope="row"
-                  >
+                  <StyledTableCell component="th" scope="row">
                     <span
-                      className="font-medium"
-                      style={{
-                        color: "#12181F",
-                      }}
+                      className="font-medium block"
+                      style={{ color: "#12181F", lineHeight: 1.3 }}
+                      title={row.name}
                     >
                       {row.name}
                     </span>
@@ -927,19 +915,15 @@ export default function ServicesPage() {
                     <div
                       className="overflow-hidden shrink-0"
                       style={{
-                        width: 56,
-                        height: 56,
+                        width: 52,
+                        height: 52,
                         borderRadius: 10,
-                        border:
-                          "1px solid rgba(18,24,31,0.08)",
+                        border: `1px solid ${BORDER}`,
                         backgroundColor: "#F3F4F6",
                       }}
                     >
                       <img
-                        src={
-                          row.image ||
-                          FALLBACK_IMAGE
-                        }
+                        src={row.image || FALLBACK_IMAGE}
                         alt={row.name}
                         style={{
                           width: "100%",
@@ -947,8 +931,7 @@ export default function ServicesPage() {
                           objectFit: "cover",
                         }}
                         onError={(event) => {
-                          event.currentTarget.src =
-                            FALLBACK_IMAGE;
+                          event.currentTarget.src = FALLBACK_IMAGE;
                         }}
                       />
                     </div>
@@ -956,7 +939,7 @@ export default function ServicesPage() {
 
                   <StyledTableCell>
                     <span
-                      className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium"
+                      className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
                       style={{
                         color: GREEN,
                         backgroundColor: GREEN_SOFT,
@@ -969,22 +952,15 @@ export default function ServicesPage() {
                   <StyledTableCell>
                     <span
                       className="block max-w-xs truncate"
-                      style={{
-                        color: "#6B6B6B",
-                      }}
+                      style={{ color: "#6B6B6B" }}
                       title={row.description}
                     >
-                      {row.description}
+                      {row.description || "No description"}
                     </span>
                   </StyledTableCell>
 
                   <StyledTableCell>
-                    <span
-                      className="text-sm"
-                      style={{
-                        color: "#6B6B6B",
-                      }}
-                    >
+                    <span className="text-sm" style={{ color: "#6B6B6B" }}>
                       {row.duration} min
                     </span>
                   </StyledTableCell>
@@ -993,69 +969,47 @@ export default function ServicesPage() {
                     <span
                       className="font-semibold"
                       style={{
-                        fontFamily:
-                          "'IBM Plex Mono', monospace",
+                        fontFamily: "'IBM Plex Mono', monospace",
                         color: "#12181F",
                       }}
                     >
-                      $
-                      {Number(
-                        row.price || 0
-                      ).toFixed(2)}
+                      ${Number(row.price || 0).toFixed(2)}
                     </span>
                   </StyledTableCell>
 
                   <StyledTableCell align="center">
-                    <div className="flex items-center justify-center gap-1.5">
+                    <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
                       <Tooltip title="Edit service">
                         <button
-                          onClick={() =>
-                            handleEdit(row)
-                          }
+                          onClick={() => handleEdit(row)}
                           className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg"
                           style={{
                             color: GREEN,
-                            backgroundColor:
-                              GREEN_SOFT,
+                            backgroundColor: GREEN_SOFT,
                           }}
                         >
-                          <Edit
-                            sx={{
-                              fontSize: 14,
-                            }}
-                          />
+                          <Edit sx={{ fontSize: 14 }} />
                           Edit
                         </button>
                       </Tooltip>
 
                       <Tooltip title="Delete service">
                         <button
-                          onClick={() =>
-                            handleDelete(row.id)
-                          }
-                          disabled={
-                            deleteLoading === row.id
-                          }
+                          onClick={() => handleDelete(row.id)}
+                          disabled={deleteLoading === row.id}
                           className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg disabled:opacity-50"
                           style={{
                             color: "#C4695A",
-                            backgroundColor:
-                              "rgba(196,105,90,0.08)",
+                            backgroundColor: "rgba(196,105,90,0.08)",
                           }}
                         >
                           {deleteLoading === row.id ? (
                             <CircularProgress
                               size={14}
-                              sx={{
-                                color: "#C4695A",
-                              }}
+                              sx={{ color: "#C4695A" }}
                             />
                           ) : (
-                            <Delete
-                              sx={{
-                                fontSize: 14,
-                              }}
-                            />
+                            <Delete sx={{ fontSize: 14 }} />
                           )}
 
                           Delete

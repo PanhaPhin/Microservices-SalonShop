@@ -20,6 +20,7 @@ public class ServiceOfferingController {
 
     private final ServiceOfferingService serviceOfferingService;
 
+    
     public ServiceOfferingController(ServiceOfferingService serviceOfferingService) {
         this.serviceOfferingService = serviceOfferingService;
     }

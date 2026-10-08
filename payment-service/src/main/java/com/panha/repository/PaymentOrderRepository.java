@@ -6,7 +6,6 @@ import org.springframework.stereotype.Repository;
 import com.panha.model.PaymentOrder;
 
 @Repository 
-
 public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Long> {
 
     PaymentOrder findByPaymentLinkId(String externalPaymentId);

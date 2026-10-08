@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Divider, Button, Modal } from "@mui/material";
 import { ShoppingCart } from "@mui/icons-material";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import CategoryCard from "./CategoryCard";
@@ -9,8 +10,9 @@ import SelectedServiceList from "./SelectedServiceList";
 import PaymentModal from "./Paymentmodal";
 
 import { fetchServiceBySalonId } from "../../../Redux/Salon Services/action";
+// Adjust this path to wherever your booking action actually lives
+import { createBooking } from "../../../Redux/Booking/action";
 
-// Demo time slots -> converted to a real date/time when selected
 const TIME_SLOTS = [
   "09:00 AM",
   "09:30 AM",
@@ -26,14 +28,22 @@ const TIME_SLOTS = [
   "03:30 PM",
 ];
 
-// Helpers to keep bookingData.time as a single consistent shape:
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+
+// ================= Helpers to keep bookingData.time as a single consistent shape:
 // "YYYY-MM-DDTHH:mm" (same format <input type="datetime-local"> uses)
 
 const pad = (n) => String(n).padStart(2, "0");
 
-const labelToIso = (label) => {
+// Takes the selected calendar date, instead of silently assuming "today"
+const labelToIso = (label, date) => {
   const match = label.match(/(\d{1,2}):(\d{2})\s?(AM|PM)/i);
-  if (!match) return null;
+  if (!match || !date) return null;
 
   let [, hours, minutes, meridiem] = match;
   hours = parseInt(hours, 10);
@@ -42,10 +52,9 @@ const labelToIso = (label) => {
   if (meridiem.toUpperCase() === "PM" && hours !== 12) hours += 12;
   if (meridiem.toUpperCase() === "AM" && hours === 12) hours = 0;
 
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = pad(now.getMonth() + 1);
-  const dd = pad(now.getDate());
+  const yyyy = date.getFullYear();
+  const mm = pad(date.getMonth() + 1);
+  const dd = pad(date.getDate());
 
   return `${yyyy}-${mm}-${dd}T${pad(hours)}:${pad(minutes)}`;
 };
@@ -62,6 +71,42 @@ const isoToLabel = (iso) => {
   return `${pad(hours)}:${pad(minutes)} ${meridiem}`;
 };
 
+const isoToDate = (iso) => {
+  if (!iso) return null;
+  const [datePart] = iso.split("T");
+  if (!datePart) return null;
+  const [yyyy, mm, dd] = datePart.split("-").map(Number);
+  return new Date(yyyy, mm - 1, dd);
+};
+
+const isSameDate = (a, b) => {
+  if (!a || !b) return false;
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+};
+
+const buildCalendarGrid = (year, month) => {
+  const firstOfMonth = new Date(year, month, 1);
+  const startWeekday = firstOfMonth.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  const cells = [];
+  for (let i = startWeekday - 1; i >= 0; i--) {
+    cells.push({ day: daysInPrevMonth - i, currentMonth: false });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ day: d, currentMonth: true });
+  }
+  while (cells.length % 7 !== 0) {
+    cells.push({ day: cells.length - (startWeekday + daysInMonth) + 1, currentMonth: false });
+  }
+  return cells;
+};
+
 const SalonServiceDetails = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
@@ -70,13 +115,29 @@ const SalonServiceDetails = () => {
   const category = useSelector((store) => store.category);
 
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [open, setOpen] = useState(false); // "time slot unavailable" modal
+  const [open, setOpen] = useState(false); // "time slot unavailable / reschedule" modal
   const [paymentOpen, setPaymentOpen] = useState(false); // payment modal
 
   const [bookingData, setBookingData] = useState({
     services: [],
     time: null, // always "YYYY-MM-DDTHH:mm"
   });
+
+  // ================= Calendar state =================
+  const today = useMemo(() => new Date(), []);
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [selectedDate, setSelectedDate] = useState(today);
+  const [yearPickerOpen, setYearPickerOpen] = useState(false);
+
+  const cells = useMemo(() => buildCalendarGrid(viewYear, viewMonth), [viewYear, viewMonth]);
+
+  const yearOptions = useMemo(() => {
+    const base = today.getFullYear();
+    const arr = [];
+    for (let y = base; y <= base + 5; y++) arr.push(y);
+    return arr;
+  }, [today]);
 
   useEffect(() => {
     dispatch(
@@ -117,12 +178,45 @@ const SalonServiceDetails = () => {
     }));
   };
 
+  // ================= Calendar navigation =================
+
+  const goToPrevMonth = () => {
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+    } else {
+      setViewMonth((m) => m - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+    } else {
+      setViewMonth((m) => m + 1);
+    }
+  };
+
+  // Picking a new day keeps whatever time was already chosen, just moves it to the new date
+  const handleSelectDay = (cell) => {
+    if (!cell.currentMonth) return;
+    const newDate = new Date(viewYear, viewMonth, cell.day);
+    setSelectedDate(newDate);
+
+    setBookingData((prev) => {
+      if (!prev.time) return prev;
+      const existingLabel = isoToLabel(prev.time);
+      return { ...prev, time: labelToIso(existingLabel, newDate) };
+    });
+  };
+
   // ================= Select Time (quick-pick buttons) =================
 
   const handleSelectTime = (label) => {
     setBookingData((prev) => ({
       ...prev,
-      time: labelToIso(label),
+      time: labelToIso(label, selectedDate),
     }));
   };
 
@@ -138,28 +232,28 @@ const SalonServiceDetails = () => {
   };
 
   const handleBooking = () => {
+    // Booking fires when a slot IS chosen; the modal is for when it's NOT.
     if (!isTimeSlotAvailable(bookingData.time)) {
       handleOpenModal();
-
-      dispatch(createBooking)
-
-
       return;
     }
 
+    dispatch(
+      createBooking({
+        salonId: id,
+        services: bookingData.services.map((s) => s.id),
+        time: bookingData.time,
+        jwt: localStorage.getItem("jwt"),
+      })
+    );
 
     handleModalClose();
     setPaymentOpen(true);
   };
 
-  // ================= Payment =================
-
   const handlePaymentConfirmed = () => {
-
     setPaymentOpen(false);
   };
-
-  // ================= Total =================
 
   const totalPrice = useMemo(() => {
     return bookingData.services.reduce(
@@ -169,6 +263,7 @@ const SalonServiceDetails = () => {
   }, [bookingData.services]);
 
   const displayTime = isoToLabel(bookingData.time);
+  const displayDate = isoToDate(bookingData.time) || selectedDate;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-8">
@@ -256,35 +351,137 @@ const SalonServiceDetails = () => {
 
           <Divider />
 
-          {/* Time Slot */}
+          {/* ================= Date & Time picker ================= */}
 
           <div>
-            <h3 className="font-semibold mb-3">Select Time Slot</h3>
+            {/* Calendar header */}
+            <div className="flex items-center justify-between mb-3">
+              <button
+                type="button"
+                onClick={goToPrevMonth}
+                className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500"
+                aria-label="Previous month"
+              >
+                <ChevronLeft size={18} />
+              </button>
 
-            <div className="grid grid-cols-2 gap-2">
-              {TIME_SLOTS.map((label) => (
-                <Button
-                  key={label}
-                  variant={displayTime === label ? "contained" : "outlined"}
-                  onClick={() => handleSelectTime(label)}
-                  size="small"
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setYearPickerOpen((v) => !v)}
+                  className="font-semibold text-sm px-2 py-1 rounded-md hover:bg-gray-100"
                 >
+                  {MONTH_NAMES[viewMonth]} {viewYear}
+                </button>
+
+                {yearPickerOpen && (
+                  <div className="absolute z-10 mt-1 left-1/2 -translate-x-1/2 w-28 max-h-40 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-md">
+                    {yearOptions.map((y) => (
+                      <button
+                        key={y}
+                        type="button"
+                        onClick={() => {
+                          setViewYear(y);
+                          setYearPickerOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100 ${
+                          y === viewYear ? "font-semibold text-blue-600" : "text-gray-700"
+                        }`}
+                      >
+                        {y}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={goToNextMonth}
+                className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500"
+                aria-label="Next month"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            {/* Weekday labels */}
+            <div className="grid grid-cols-7 mb-1">
+              {WEEKDAY_LABELS.map((label, i) => (
+                <div key={i} className="text-center text-xs font-medium text-gray-400 py-1">
                   {label}
-                </Button>
+                </div>
               ))}
             </div>
 
-            <div className="mt-4">
-              <p className="text-sm text-gray-500">Selected Time</p>
+            {/* Day grid */}
+            <div className="grid grid-cols-7 gap-1">
+              {cells.map((cell, i) => {
+                const cellDate = cell.currentMonth ? new Date(viewYear, viewMonth, cell.day) : null;
+                const isSelected = cell.currentMonth && isSameDate(cellDate, selectedDate);
+                const isToday = cell.currentMonth && isSameDate(cellDate, today);
+                const isPast =
+                  cell.currentMonth &&
+                  cellDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-              <div className="mt-1 border rounded-md p-3">
-                {displayTime ? (
-                  <span className="font-medium">{displayTime}</span>
-                ) : (
-                  <span className="text-gray-400">
-                    No time slot selected
-                  </span>
-                )}
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    disabled={!cell.currentMonth || isPast}
+                    onClick={() => handleSelectDay(cell)}
+                    className={[
+                      "aspect-square rounded-md text-sm flex items-center justify-center transition-colors",
+                      !cell.currentMonth ? "text-gray-300 cursor-default" : "",
+                      isPast ? "text-gray-300 cursor-not-allowed" : "text-gray-700 hover:bg-gray-100",
+                      isSelected ? "bg-blue-600 text-white hover:bg-blue-600" : "",
+                      isToday && !isSelected ? "ring-1 ring-blue-400" : "",
+                    ].join(" ")}
+                  >
+                    {cell.day}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Time slot picker */}
+            <div className="mt-5">
+              <h3 className="font-semibold mb-3 text-sm">Select Time Slot</h3>
+
+              <div className="grid grid-cols-2 gap-2">
+                {TIME_SLOTS.map((label) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => handleSelectTime(label)}
+                    className={[
+                      "text-sm px-3 py-1.5 rounded-md border transition-colors",
+                      displayTime === label
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50",
+                    ].join(" ")}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-4">
+                <p className="text-sm text-gray-500">Selected Date & Time</p>
+                <div className="mt-1 border rounded-md p-3">
+                  {bookingData.time ? (
+                    <span className="font-medium">
+                      {displayDate.toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}{" "}
+                      &middot; {displayTime}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">No time slot selected</span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -373,7 +570,6 @@ const SalonServiceDetails = () => {
         onClose={() => setPaymentOpen(false)}
         amount={totalPrice}
         onConfirmed={handlePaymentConfirmed}
-    
       />
     </div>
   );

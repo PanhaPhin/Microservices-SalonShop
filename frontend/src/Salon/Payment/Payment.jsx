@@ -16,6 +16,20 @@ import {
   CalendarMonth,
   FilterList,
 } from "@mui/icons-material";
+import {
+  getTotalEarnings,
+  getLastPayment,
+  getMonthTotal,
+  getPendingTotal,
+  getNextPayoutDate,
+  getAvgTransaction,
+  getRefundRate,
+  getServiceBreakdown,
+  getEarningsSeries,
+  getRecentTransactions,
+  getPayoutSchedule,
+  getServiceIconKey,
+} from "../../util/totalEarning";
 
 const GREEN = "#15803d";
 const GREEN_SOFT = "rgba(21,128,61,0.10)";
@@ -26,114 +40,17 @@ const RED_SOFT = "rgba(196,105,90,0.10)";
 const INK = "#12181F";
 const BG = "#F9FAFB";
 
-const stats = [
-  {
-    label: "Total Earning",
-    value: "$100",
-    icon: PaymentsIcon,
-    accent: GREEN,
-    accentSoft: GREEN_SOFT,
-    footLabel: "Last Payment",
-    footValue: "$20",
-  },
-  {
-    label: "This Month",
-    value: "$45",
-    icon: TrendingUp,
-    accent: GREEN,
-    accentSoft: GREEN_SOFT,
-    footLabel: "Last Month",
-    footValue: "$38",
-  },
-  {
-    label: "Pending",
-    value: "$15",
-    icon: HourglassEmpty,
-    accent: AMBER,
-    accentSoft: AMBER_SOFT,
-    footLabel: "Next Payout",
-    footValue: "June 30",
-  },
-];
-
-// secondary analyst-facing stats
-const analystStats = [
-  { label: "Avg. Transaction", value: "$47.50", delta: "+3.2%", icon: AccountBalanceWallet, positive: true },
-  { label: "Refund Rate", value: "2.1%", delta: "-0.6%", icon: Undo, positive: true },
-  { label: "Processing Fee", value: "$3.20", delta: "+1.1%", icon: Percent, positive: false },
-  { label: "Payout Cadence", value: "Weekly", delta: "Every Fri", icon: CalendarMonth, positive: true },
-];
-
-const transactions = [
-  {
-    label: "Classic Haircut",
-    customer: "Sophea K.",
-    date: "Jun 24",
-    amount: "+$25",
-    positive: true,
-    icon: ContentCut,
-  },
-  {
-    label: "Hair Coloring",
-    customer: "Dara M.",
-    date: "Jun 22",
-    amount: "+$80",
-    positive: true,
-    icon: Palette,
-  },
-  {
-    label: "Refund",
-    customer: "Lina T.",
-    date: "Jun 20",
-    amount: "-$10",
-    positive: false,
-    icon: Undo,
-  },
-  {
-    label: "Facial Treatment",
-    customer: "Chan P.",
-    date: "Jun 18",
-    amount: "+$55",
-    positive: true,
-    icon: Spa,
-  },
-];
-
-// revenue series per period, for the trend chart
-const earningsSeries = {
-  Week: {
-    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    values: [12, 18, 9, 22, 25, 31, 14],
-  },
-  Month: {
-    labels: ["W1", "W2", "W3", "W4"],
-    values: [82, 96, 74, 108],
-  },
-  Year: {
-    labels: ["Mar", "Apr", "May", "Jun"],
-    values: [320, 365, 298, 402],
-  },
-};
-
-// revenue split by service, for the breakdown bars
-const serviceBreakdown = [
-  { name: "Hair Coloring", amount: 80, pct: 44, color: GREEN },
-  { name: "Facial Treatment", amount: 55, pct: 30, color: AMBER },
-  { name: "Classic Haircut", amount: 25, pct: 14, color: "#5C8AA8" },
-  { name: "Other", amount: 22, pct: 12, color: "#8B93A0" },
-];
-
-// upcoming and past payouts
-const payouts = [
-  { date: "Jun 30", amount: "$45.00", status: "upcoming" },
-  { date: "Jun 23", amount: "$38.00", status: "paid" },
-  { date: "Jun 16", amount: "$41.50", status: "paid" },
-  { date: "Jun 9", amount: "$29.00", status: "paid" },
-];
-
 const payoutStatusStyle = {
   upcoming: { bg: AMBER_SOFT, text: AMBER, label: "Upcoming" },
   paid: { bg: GREEN_SOFT, text: GREEN, label: "Paid" },
+};
+
+const serviceIconMap = {
+  haircut: ContentCut,
+  coloring: Palette,
+  facial: Spa,
+  refund: Undo,
+  default: PaymentsIcon,
 };
 
 const StatCard = ({ label, value, icon: Icon, accent, accentSoft, footLabel, footValue }) => (
@@ -202,7 +119,7 @@ const PeriodTabs = ({ value, onChange, options }) => (
   </div>
 );
 
-// hand-built SVG bar chart for earnings over time, with hover tooltip
+
 const EarningsChart = ({ labels, values, height = 180 }) => {
   const [mounted, setMounted] = useState(false);
   const [hoverIdx, setHoverIdx] = useState(null);
@@ -216,9 +133,9 @@ const EarningsChart = ({ labels, values, height = 180 }) => {
   const padX = 20;
   const padTop = 14;
   const padBottom = 26;
-  const max = Math.max(...values) * 1.15;
+  const max = Math.max(1, ...values) * 1.15;
   const innerH = height - padTop - padBottom;
-  const slot = (width - padX * 2) / values.length;
+  const slot = (width - padX * 2) / (values.length || 1);
   const barWidth = Math.min(slot * 0.42, 34);
 
   return (
@@ -286,15 +203,22 @@ const EarningsChart = ({ labels, values, height = 180 }) => {
   );
 };
 
-const ServiceBreakdownBars = () => {
+const ServiceBreakdownBars = ({ services }) => {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     const t = requestAnimationFrame(() => setMounted(true));
     return () => cancelAnimationFrame(t);
   }, []);
+
+  if (!services.length) {
+    return <p className="text-sm" style={{ color: "#8B93A0" }}>No completed bookings yet.</p>;
+  }
+
+  const barColors = [GREEN, AMBER, "#5C8AA8", "#8B93A0"];
+
   return (
     <div className="space-y-3.5">
-      {serviceBreakdown.map((s) => (
+      {services.map((s, i) => (
         <div key={s.name}>
           <div className="flex justify-between text-xs mb-1">
             <span style={{ color: "#12181F" }}>{s.name}</span>
@@ -308,7 +232,7 @@ const ServiceBreakdownBars = () => {
               className="h-1.5 rounded-full"
               style={{
                 width: mounted ? `${s.pct}%` : "0%",
-                backgroundColor: s.color,
+                backgroundColor: barColors[i % barColors.length],
                 transition: "width 0.9s cubic-bezier(0.34,1.2,0.64,1)",
               }}
             />
@@ -319,10 +243,77 @@ const ServiceBreakdownBars = () => {
   );
 };
 
-const Payment = () => {
+// bookings: array of { id, service, customerName, date, totalPrice, status }
+const Payment = ({ bookings = [] }) => {
   const [period, setPeriod] = useState("Week");
-  const trend = useMemo(() => earningsSeries[period], [period]);
+
+  const trend = useMemo(() => getEarningsSeries(bookings, period), [bookings, period]);
   const periodTotal = useMemo(() => trend.values.reduce((a, b) => a + b, 0), [trend]);
+
+  const totalEarnings = useMemo(() => getTotalEarnings(bookings), [bookings]);
+  const lastPayment = useMemo(() => getLastPayment(bookings), [bookings]);
+  const thisMonth = useMemo(() => getMonthTotal(bookings, 0), [bookings]);
+  const lastMonth = useMemo(() => getMonthTotal(bookings, 1), [bookings]);
+  const pending = useMemo(() => getPendingTotal(bookings), [bookings]);
+  const nextPayoutDate = useMemo(() => getNextPayoutDate(), []);
+
+  const avgTransaction = useMemo(() => getAvgTransaction(bookings), [bookings]);
+  const refundRate = useMemo(() => getRefundRate(bookings), [bookings]);
+
+  const serviceBreakdown = useMemo(() => getServiceBreakdown(bookings), [bookings]);
+  const transactions = useMemo(() => getRecentTransactions(bookings, 4), [bookings]);
+  const payouts = useMemo(() => getPayoutSchedule(bookings, 4), [bookings]);
+
+  const stats = [
+    {
+      label: "Total Earning",
+      value: `$${totalEarnings.toFixed(2)}`,
+      icon: PaymentsIcon,
+      accent: GREEN,
+      accentSoft: GREEN_SOFT,
+      footLabel: "Last Payment",
+      footValue: `$${lastPayment.toFixed(2)}`,
+    },
+    {
+      label: "This Month",
+      value: `$${thisMonth.toFixed(2)}`,
+      icon: TrendingUp,
+      accent: GREEN,
+      accentSoft: GREEN_SOFT,
+      footLabel: "Last Month",
+      footValue: `$${lastMonth.toFixed(2)}`,
+    },
+    {
+      label: "Pending",
+      value: `$${pending.toFixed(2)}`,
+      icon: HourglassEmpty,
+      accent: AMBER,
+      accentSoft: AMBER_SOFT,
+      footLabel: "Next Payout",
+      footValue: nextPayoutDate,
+    },
+  ];
+
+  const monthDelta = lastMonth ? (((thisMonth - lastMonth) / lastMonth) * 100).toFixed(1) : "0.0";
+
+  const analystStats = [
+    {
+      label: "Avg. Transaction",
+      value: `$${avgTransaction.toFixed(2)}`,
+      delta: `${monthDelta >= 0 ? "+" : ""}${monthDelta}%`,
+      icon: AccountBalanceWallet,
+      positive: Number(monthDelta) >= 0,
+    },
+    {
+      label: "Refund Rate",
+      value: `${refundRate.toFixed(1)}%`,
+      delta: refundRate <= 5 ? "Healthy" : "Elevated",
+      icon: Undo,
+      positive: refundRate <= 5,
+    },
+    { label: "Processing Fee", value: "—", delta: "Set by provider", icon: Percent, positive: true },
+    { label: "Payout Cadence", value: "Weekly", delta: "Every Fri", icon: CalendarMonth, positive: true },
+  ];
 
   return (
     <div
@@ -408,7 +399,7 @@ const Payment = () => {
               </h3>
               <p className="text-xs mt-0.5" style={{ color: "#8B93A0" }}>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, color: "#12181F" }}>
-                  ${periodTotal}
+                  ${periodTotal.toFixed(2)}
                 </span>{" "}
                 total this {period.toLowerCase()}
               </p>
@@ -427,7 +418,7 @@ const Payment = () => {
           <h3 className="text-base font-semibold mb-4" style={{ fontFamily: "'Fraunces', serif", color: "#12181F" }}>
             Revenue by Service
           </h3>
-          <ServiceBreakdownBars />
+          <ServiceBreakdownBars services={serviceBreakdown} />
         </div>
 
         {/* Payout schedule */}
@@ -493,8 +484,11 @@ const Payment = () => {
           </div>
 
           <div className="flex flex-col">
+            {transactions.length === 0 && (
+              <p className="text-sm py-3" style={{ color: "#8B93A0" }}>No transactions yet.</p>
+            )}
             {transactions.map((tx, i) => {
-              const Icon = tx.icon;
+              const Icon = serviceIconMap[getServiceIconKey(tx.positive ? tx.label : "refund")];
               const color = tx.positive ? GREEN : RED;
               const soft = tx.positive ? GREEN_SOFT : RED_SOFT;
               return (

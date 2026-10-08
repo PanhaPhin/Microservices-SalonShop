@@ -21,6 +21,8 @@ public interface ServiceOfferingService {
 
     ServiceOffering getServiceById(Long id) throws Exception;
 
+    void deleteService(Long id) throws Exception;
+
     // ✅ Add this method to get all services
     Set<ServiceOffering> getAllServices();
 }

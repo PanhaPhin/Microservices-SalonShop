@@ -33,10 +33,6 @@ const BankLogoBadge = ({ initials, color }) => (
   </div>
 );
 
-/**
- * Inner card form — must be rendered inside <Elements>, which is
- * why it's split out from PaymentModal.
- */
 const StripeCardForm = ({ clientSecret, onConfirmed }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -128,19 +124,14 @@ const PaymentModal = ({
   // so we don't re-create it on every render.
   const [stripePromise] = useState(() => loadStripe(stripePublishableKey));
 
-  // Render the QR via a public QR image service so we don't need
-  // to add a new npm dependency. Swap for a local QR lib
-  // (e.g. `qrcode.react`) later if you'd rather not rely on
-  // an external service in production.
+  
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
     khqrString
   )}`;
 
   const handleDeepLink = (scheme) => {
     const url = `${scheme}${encodeURIComponent(khqrString)}`;
-    // Falls back silently on desktop / if the app isn't installed —
-    // consider adding a "app not installed?" hint or app-store
-    // fallback link once you're targeting real users.
+   
     window.location.href = url;
   };
 

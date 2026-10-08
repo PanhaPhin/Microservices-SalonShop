@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
+
 import {
   AccountCircle,
   NotificationsActive,
@@ -25,6 +26,9 @@ const Navbar = () => {
   const { auth } = useSelector((store: any) => store);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const allowedDashboardRoles = ["SALON_OWNER", "ADMIN"];
+  const canAccessDashboard = allowedDashboardRoles.includes(auth.user?.role);
 
   const open = Boolean(anchorEl);
 
@@ -65,12 +69,12 @@ const Navbar = () => {
           onClick={() => navigate("/")}
           className="cursor-pointer text-2xl font-bold"
         >
-          Nika
+          salon phnom penh
         </h1>
 
         <Button onClick={() => navigate("/")}>Home</Button>
 
-        {isSalonOwner && (
+        {canAccessDashboard && (
           <Button onClick={() => navigate("/salon-dashboard")}>
             Salon Dashboard
           </Button>
@@ -79,7 +83,7 @@ const Navbar = () => {
 
       {/* Right */}
       <div className="flex items-center gap-4">
-        {!isSalonOwner && (
+        {!canAccessDashboard && (
           <Button variant="outlined" onClick={() => navigate("/become-partner")}>
             Become Partner
           </Button>

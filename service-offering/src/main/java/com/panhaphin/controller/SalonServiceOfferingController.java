@@ -3,6 +3,8 @@ package com.panhaphin.controller;
 import java.util.Set;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,7 +25,7 @@ import com.panhaphin.service.client.SalonFeignClient;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/service-offerings")
+@RequestMapping("/api/service-offerings/salon-owner")
 @RequiredArgsConstructor
 public class SalonServiceOfferingController {
 
@@ -32,6 +34,7 @@ public class SalonServiceOfferingController {
     private final CategoryFeignClient categoryFeignClient;
 
     @GetMapping
+    @PreAuthorize("hasRole('SALON_OWNER')")
     public ResponseEntity<Set<ServiceOffering>> getMyServices(
             @RequestHeader("Authorization") String jwt
     ) throws Exception {
@@ -48,30 +51,58 @@ public class SalonServiceOfferingController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('SALON_OWNER')")
     public ResponseEntity<ServiceOffering> createService(
             @RequestBody ServiceDTO serviceDTO,
             @RequestHeader("Authorization") String jwt
     ) throws Exception {
 
-        SalonDTO salonDTO = salonFeignClient.getSalonByOwnerId(jwt).getBody();
+        SalonDTO salonDTO
+                = salonFeignClient.getSalonByOwnerId(jwt).getBody();
 
-        CategoryDTO categoryDTO = categoryFeignClient.getCategoriesByIdAndSalon(serviceDTO.getCategory(), salonDTO.getId()).getBody();
+        CategoryDTO categoryDTO
+                = categoryFeignClient.getCategoriesByIdAndSalon(
+                        salonDTO.getId(),
+                        serviceDTO.getCategory(),
+                        jwt
+                ).getBody();
 
         ServiceOffering offering
-                = serviceOfferingService.createService(salonDTO, serviceDTO, categoryDTO);
+                = serviceOfferingService.createService(
+                        salonDTO,
+                        serviceDTO,
+                        categoryDTO
+                );
 
         return ResponseEntity.ok(offering);
     }
 
-    // Update single service
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SALON_OWNER')")
     public ResponseEntity<ServiceOffering> updateService(
             @PathVariable Long id,
-            @RequestBody ServiceOffering serviceOffering) throws Exception {
+            @RequestBody ServiceOffering serviceOffering,
+            @RequestHeader("Authorization") String jwt
+    ) throws Exception {
 
         ServiceOffering updatedService
-                = serviceOfferingService.updateService(id, serviceOffering);
+                = serviceOfferingService.updateService(
+                        id,
+                        serviceOffering
+                );
 
         return ResponseEntity.ok(updatedService);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SALON_OWNER')")
+    public ResponseEntity<Void> deleteService(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String jwt
+    ) throws Exception {
+
+        serviceOfferingService.deleteService(id);
+
+        return ResponseEntity.noContent().build();
     }
 }

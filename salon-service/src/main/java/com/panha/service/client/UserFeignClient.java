@@ -9,15 +9,15 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import com.panha.payload.dto.UserDTO;
 
 @FeignClient("user-service")
-public interface  UserFeignClient {
+public interface UserFeignClient {
 
     @GetMapping("/api/users/{userId}")
-    public ResponseEntity<UserDTO> getUserById(
-        @PathVariable("userId") Long id
+    ResponseEntity<UserDTO> getUserById(
+            @PathVariable("userId") Long userId
     ) throws Exception;
 
     @GetMapping("/api/users/profile")
-    public ResponseEntity<UserDTO> getUserProfile(
-        @RequestHeader("Authorization") String jwt) throws Exception;
-    
+    ResponseEntity<UserDTO> getUserProfile(
+            @RequestHeader("Authorization") String jwt
+    ) throws Exception;
 }

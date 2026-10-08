@@ -17,6 +17,12 @@ spring:
       ddl-auto: update
     show-sql: true
 
+  security:
+     oauth2:
+       resourceserver:
+         jwt:
+          issuer-uri: http://localhost:8080/realms/master
+
 eureka:
   instance:
     prefer-ip-address: true

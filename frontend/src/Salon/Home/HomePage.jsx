@@ -874,7 +874,7 @@ function SalonDashboard() {
         {/* Today's Book (ledger list) */}
         <Reveal delay={120} className="lg:col-span-2">
           <div
-            className="rounded-2xl border border-[#12181F]/[0.06] p-6"
+            className="rounded-2xl border border-[#12181F]/6 p-6"
             style={{ backgroundColor: CARD, color: INK }}
           >
             <div className="flex items-center justify-between mb-5">

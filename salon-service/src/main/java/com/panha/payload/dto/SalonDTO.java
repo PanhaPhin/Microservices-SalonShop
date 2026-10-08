@@ -14,6 +14,8 @@ public class SalonDTO {
 
     private String name;
 
+    private String description;
+
     private List<String> image;
 
     private String address;
@@ -24,6 +26,12 @@ public class SalonDTO {
 
     private String city;
 
+    private String pincode;
+
+    /**
+     * This is normally returned by backend.
+     * Frontend does not need to send it.
+     */
     private Long ownerId;
 
     @JsonFormat(pattern = "HH:mm:ss")

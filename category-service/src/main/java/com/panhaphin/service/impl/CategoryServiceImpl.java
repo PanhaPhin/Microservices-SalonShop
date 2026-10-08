@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -24,7 +25,8 @@ public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
 
-    private static final String UPLOAD_DIR = "uploads/categories/";
+    private static final String UPLOAD_DIR =
+            "uploads/categories/";
 
     @Override
     public Category saveCategory(
@@ -33,39 +35,55 @@ public class CategoryServiceImpl implements CategoryService {
             SalonDTO salonDTO
     ) {
 
+        if (salonDTO == null || salonDTO.getId() == null){
+                throw new IllegalArgumentException(
+                    "Salon ID is required"
+            );
+        }
+
         Category newCategory = new Category();
 
-        newCategory.setName(category.getName());
-        newCategory.setSalonId(salonDTO.getId());
+        newCategory.setName(
+                category.getName()
+        );
+
+        newCategory.setSalonId(
+                salonDTO.getId()
+        );
 
         if (image != null && !image.isEmpty()) {
 
             try {
 
-                Path uploadPath
-                        = Paths.get(UPLOAD_DIR);
+                Path uploadPath =
+                        Paths.get(UPLOAD_DIR);
 
-                Files.createDirectories(uploadPath);
+                Files.createDirectories(
+                        uploadPath
+                );
 
-                String originalFileName
-                        = image.getOriginalFilename();
+                String originalFileName =
+                        image.getOriginalFilename();
 
                 String extension = "";
 
                 if (originalFileName != null
                         && originalFileName.contains(".")) {
 
-                    extension
-                            = originalFileName.substring(
+                    extension =
+                            originalFileName.substring(
                                     originalFileName.lastIndexOf(".")
                             );
                 }
 
-                String fileName
-                        = UUID.randomUUID() + extension;
+                String fileName =
+                        UUID.randomUUID()
+                                + extension;
 
-                Path filePath
-                        = uploadPath.resolve(fileName);
+                Path filePath =
+                        uploadPath.resolve(
+                                fileName
+                        );
 
                 Files.copy(
                         image.getInputStream(),
@@ -74,7 +92,8 @@ public class CategoryServiceImpl implements CategoryService {
                 );
 
                 newCategory.setImage(
-                        "/uploads/categories/" + fileName
+                        "/uploads/categories/"
+                                + fileName
                 );
 
             } catch (IOException e) {
@@ -86,62 +105,115 @@ public class CategoryServiceImpl implements CategoryService {
             }
         }
 
-        return categoryRepository.save(newCategory);
+        return categoryRepository.save(
+                newCategory
+        );
     }
 
     @Override
-    public Set<Category> getAllCategoriesBySalon(Long id) {
-        return categoryRepository.findBySalonId(id);
+    public Set<Category> getAllCategoriesBySalon(
+            Long id
+    ) {
+
+        return categoryRepository.findBySalonId(
+                id
+        );
+    }
+
+    // ADMIN: get all categories
+    @Override
+    public Set<Category> getAllCategories() {
+
+        return new HashSet<>(
+                categoryRepository.findAll()
+        );
     }
 
     @Override
-    public Category getCategoryById(Long id) throws Exception {
-        Category category = categoryRepository.findById(id).orElse(null);
+    public Category getCategoryById(
+            Long id
+    ) throws Exception {
+
+        Category category =
+                categoryRepository
+                        .findById(id)
+                        .orElse(null);
 
         if (category == null) {
-            throw new Exception("category not with exist with id " + id);
+
+            throw new Exception(
+                    "Category not found with id "
+                            + id
+            );
         }
+
         return category;
     }
 
     @Override
-    public void deleteCategoryById(Long id, Long salonId) throws Exception {
-        Category category = getCategoryById(id);
-        if (!category.getSalonId().equals(salonId)) {
-            throw new Exception("you don't have permission to delete this category");
+    public void deleteCategoryById(
+            Long id,
+            Long salonId
+    ) throws Exception {
+
+        Category category =
+                getCategoryById(id);
+
+        if (!category.getSalonId()
+                .equals(salonId)) {
+
+            throw new Exception(
+                    "You don't have permission "
+                            + "to delete this category"
+            );
         }
 
         categoryRepository.deleteById(id);
-
     }
 
     @Override
-    public Category findByIdAndSalonId(Long id, Long salonId) throws Exception {
-        Category category = categoryRepository.findByIdAndSalonId(id, salonId);
+    public Category findByIdAndSalonId(
+            Long id,
+            Long salonId
+    ) throws Exception {
+
+        Category category =
+                categoryRepository
+                        .findByIdAndSalonId(
+                                id,
+                                salonId
+                        );
 
         if (category == null) {
-            throw new Exception("category not found...");
+
+            throw new Exception(
+                    "Category not found"
+            );
         }
 
         return category;
-
     }
 
     @Override
     public Category updateCategory(
             Long id,
             Category category,
+            MultipartFile image,
             Long salonId
     ) throws Exception {
 
-        Category existingCategory
-                = categoryRepository.findByIdAndSalonId(
-                        id,
-                        salonId
-                );
+        Category existingCategory =
+                categoryRepository
+                        .findByIdAndSalonId(
+                                id,
+                                salonId
+                        );
 
         if (existingCategory == null) {
-            throw new Exception("Category not found");
+
+            throw new Exception(
+                    "Category not found"
+            );
         }
 
         existingCategory.setName(
@@ -156,5 +228,4 @@ public class CategoryServiceImpl implements CategoryService {
                 existingCategory
         );
     }
-
 }

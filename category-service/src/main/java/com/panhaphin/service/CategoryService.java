@@ -18,14 +18,24 @@ public interface CategoryService {
     Category updateCategory(
             Long id,
             Category category,
+            MultipartFile image,
             Long salonId
     ) throws Exception;
 
     Set<Category> getAllCategoriesBySalon(Long id);
 
+
+    Set<Category> getAllCategories();
+
     Category getCategoryById(Long id) throws Exception;
 
-    void deleteCategoryById(Long id, Long salonId) throws Exception;
+    void deleteCategoryById(
+            Long id,
+            Long salonId
+    ) throws Exception;
 
-    Category findByIdAndSalonId(Long id, Long salonId) throws Exception;
+    Category findByIdAndSalonId(
+            Long id,
+            Long salonId
+    ) throws Exception;
 }
